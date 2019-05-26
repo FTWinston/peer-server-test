@@ -4,10 +4,22 @@ const CleanWebpackPlugin = require('clean-webpack-plugin');
 
 module.exports = {
   entry: {
-    client: './src/client/index.ts'
+    client: './src/client/index.tsx'
   },
   module: {
     rules: [
+      {
+        test: /worker.ts$/,
+        use: [
+          {
+            loader: require.resolve('worker-loader'),
+            options: {
+              name: '[name].[hash].js',
+            },
+          },
+          'ts-loader',
+        ],
+      },
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
@@ -25,7 +37,7 @@ module.exports = {
   plugins: [
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
-      title: 'Peer Server test'
+      template: './src/client/index.html'
     }),
   ],
   output: {

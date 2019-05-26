@@ -1,4 +1,6 @@
-export const worker: Worker = self as any;
+export default {} as typeof Worker & (new () => Worker);
+
+const worker: Worker = self as any;
 
 console.log('worker started');
 
