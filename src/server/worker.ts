@@ -1,18 +1,11 @@
+import { PeerServer } from './PeerServer';
+
 export default {} as typeof Worker & (new () => Worker);
 
 const worker: Worker = self as any;
 
-console.log('worker started');
+const server = new PeerServer(message => worker.postMessage(message));
 
-worker.onmessage = e => {
-    console.log('worker received message', e.data);
+worker.onmessage = e => server.receiveMessage(e.data);
 
-    worker.postMessage('sod off');
-    /*
-    const data = e.data as [string, number];
-
-    if (data[0] === 'generate') {
-        
-    }
-    */
-}
+console.log('server worker started');

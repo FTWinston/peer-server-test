@@ -2,7 +2,6 @@ import { Connection, peerOptions } from './Connection';
 import Peer from 'peerjs';
 
 export class RemoteConnection extends Connection {
-    private peer: Peer;
     private conn: Peer.DataConnection;
 
     constructor(serverId: string, receiveMessage: (data: any) => void, ready: () => void) {
@@ -41,8 +40,8 @@ export class RemoteConnection extends Connection {
         });
     }
 
-    sendMessage(msg: any) {
-        this.conn.send(msg);
+    sendCommand(command: any) {
+        this.conn.send(command);
     }
 
     disconnect() {

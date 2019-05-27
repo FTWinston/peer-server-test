@@ -5,7 +5,9 @@ export const peerOptions: Peer.PeerJSOption = {
 };
 
 export abstract class Connection {
-    abstract sendMessage(msg: any): void;
+    protected peer: Peer;
+    
+    abstract sendCommand(command: any): void;
 
     abstract disconnect(): void;
 

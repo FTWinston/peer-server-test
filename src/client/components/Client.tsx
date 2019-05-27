@@ -20,7 +20,7 @@ export class Client extends React.Component<{}, IState> {
             const connectionSelected = (connection: Connection) => {
                 this.setState({ connection });
 
-                connection.sendMessage('hullo');
+                connection.sendCommand('hullo');
             }
 
             return <ConnectionSelector
