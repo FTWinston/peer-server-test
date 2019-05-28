@@ -1,9 +1,12 @@
 import * as React from 'react';
-import { Connection } from '../Connection';
+import { Connection } from '../../framework/Connection';
 import { ConnectionSelector } from './ConnectionSelector';
+import { ClientToServerCommand } from '../../shared/ClientToServerCommand';
+import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
+import { ServerState } from '../../shared/ServerState';
 
 interface IState {
-    connection?: Connection;
+    connection?: Connection<ClientToServerCommand, ServerToClientCommand, ServerState>;
 }
 
 export class Client extends React.Component<{}, IState> {
@@ -17,10 +20,10 @@ export class Client extends React.Component<{}, IState> {
         if (this.state.connection === undefined) {
             const msgReceived = (data: any) => this.messageReceived(data);
 
-            const connectionSelected = (connection: Connection) => {
+            const connectionSelected = (connection: Connection<ClientToServerCommand, ServerToClientCommand, ServerState>) => {
                 this.setState({ connection });
 
-                connection.sendCommand('hullo');
+                connection.sendCommand('shoot');
             }
 
             return <ConnectionSelector

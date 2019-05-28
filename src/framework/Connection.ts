@@ -4,10 +4,10 @@ export const peerOptions: Peer.PeerJSOption = {
     // key: 'lwjd5qra8257b9',
 };
 
-export abstract class Connection {
+export abstract class Connection<TClientToServerCommand, TServerToClientCommand, TServerState> {
     protected peer: Peer;
     
-    abstract sendCommand(command: any): void;
+    abstract sendCommand(command: TClientToServerCommand): void;
 
     abstract disconnect(): void;
 

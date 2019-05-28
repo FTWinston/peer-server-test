@@ -1,11 +1,9 @@
-import { PeerServer } from './PeerServer';
+import { TestPeerServer } from './TestPeerServer';
 
 export default {} as typeof Worker & (new () => Worker);
 
+console.log('server worker started');
+
 const worker: Worker = self as any;
 
-const server = new PeerServer(message => worker.postMessage(message));
-
-worker.onmessage = e => server.receiveMessage(e.data);
-
-console.log('server worker started');
+new TestPeerServer(worker);

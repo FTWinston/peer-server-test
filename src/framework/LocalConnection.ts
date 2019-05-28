@@ -1,9 +1,10 @@
 import { Connection, peerOptions } from './Connection';
 import Peer from 'peerjs';
 import ServerWorker from '../server/worker';
-import { ServerMessageIn, ServerMessageInType } from '../shared/ServerMessageIn';
+import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 
-export class LocalConnection extends Connection {
+export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TServerState>
+extends Connection<TClientToServerCommand, TServerToClientCommand, TServerState> {
     private worker: Worker;
 
     constructor(receiveMessage: (data: any) => void, ready: () => void) {
@@ -35,13 +36,13 @@ export class LocalConnection extends Connection {
             console.log(`Peer connected: ${conn.peer}`);
 
             this.sendMessage({
-                type: ServerMessageInType.Join,
+                type: ServerWorkerMessageInType.Join,
                 who: conn.peer,
             });
 
             conn.on('close', () => {
                 this.sendMessage({
-                    type: ServerMessageInType.Quit,
+                    type: ServerWorkerMessageInType.Quit,
                     who: conn.peer,
                 }); 
             })
@@ -52,13 +53,13 @@ export class LocalConnection extends Connection {
         });
     }
 
-    private sendMessage(message: ServerMessageIn) {
+    private sendMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {
         this.worker.postMessage(message);
     }
 
-    sendCommand(command: any) {
+    sendCommand(command: TClientToServerCommand) {
         this.sendMessage({
-            type: ServerMessageInType.Command,
+            type: ServerWorkerMessageInType.Command,
             who: this.peer.id,
             command,
         })

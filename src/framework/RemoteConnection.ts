@@ -1,7 +1,8 @@
 import { Connection, peerOptions } from './Connection';
 import Peer from 'peerjs';
 
-export class RemoteConnection extends Connection {
+export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TServerState>
+extends Connection<TClientToServerCommand, TServerToClientCommand, TServerState> {
     private conn: Peer.DataConnection;
 
     constructor(serverId: string, receiveMessage: (data: any) => void, ready: () => void) {
@@ -40,7 +41,7 @@ export class RemoteConnection extends Connection {
         });
     }
 
-    sendCommand(command: any) {
+    sendCommand(command: TClientToServerCommand) {
         this.conn.send(command);
     }
 
