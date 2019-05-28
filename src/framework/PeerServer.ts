@@ -1,11 +1,11 @@
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 
-export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand, TServerState>
+export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand, TServerState, TClientState>
 {
     private readonly tickTimer: NodeJS.Timeout;
     
-    protected readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TServerState>) => void;
+    private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void;
 
     protected readonly clients: string[] = [];
 
@@ -70,7 +70,15 @@ export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand,
         }
     }
 
+    protected sendCommand(client: string | undefined, command: TServerToClientCommand) {
+        this.sendMessage({
+            type: ServerWorkerMessageOutType.Command,
+            who: client,
+            command,
+        });
+    }
+
     protected abstract simulateTick(timestep: number): void;
 
-    protected abstract getStateToSendClient(who: string): TServerState;
+    protected abstract getStateToSendClient(who: string): TClientState;
 }

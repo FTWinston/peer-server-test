@@ -1,12 +1,10 @@
 import * as React from 'react';
-import { Connection } from '../../framework/Connection';
-import { ConnectionSelector } from './ConnectionSelector';
-import { ClientToServerCommand } from '../../shared/ClientToServerCommand';
+import { ConnectionSelector, TypedConnection } from './ConnectionSelector';
 import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
-import { ServerState } from '../../shared/ServerState';
+import { ClientState } from '../../shared/ClientState';
 
 interface IState {
-    connection?: Connection<ClientToServerCommand, ServerToClientCommand, ServerState>;
+    connection?: TypedConnection;
 }
 
 export class Client extends React.Component<{}, IState> {
@@ -18,9 +16,10 @@ export class Client extends React.Component<{}, IState> {
 
     render() {
         if (this.state.connection === undefined) {
-            const msgReceived = (data: any) => this.messageReceived(data);
+            const commandReceived = (cmd: ServerToClientCommand) => this.commandReceived(cmd);
+            const stateReceived = (state: ClientState) => this.stateReceived(state);
 
-            const connectionSelected = (connection: Connection<ClientToServerCommand, ServerToClientCommand, ServerState>) => {
+            const connectionSelected = (connection: TypedConnection) => {
                 this.setState({ connection });
 
                 connection.sendCommand('shoot');
@@ -28,28 +27,27 @@ export class Client extends React.Component<{}, IState> {
 
             return <ConnectionSelector
                 connectionSelected={connectionSelected}
-                receiveMessage={msgReceived}
+                receiveCommand={commandReceived}
+                receiveState={stateReceived}
             />
         }
 
         return (
         <div>
             Connected to server {this.state.connection.getServerId()}
+
+            <button onClick={() => this.state.connection!.sendCommand('left')}>left</button>
+            <button onClick={() => this.state.connection!.sendCommand('right')}>right</button>
+            <button onClick={() => this.state.connection!.sendCommand('shoot')}>shoot</button>
         </div>
         );
     }
 
-    private messageReceived(msg: any) {
+    private commandReceived(cmd: ServerToClientCommand) {
+        console.log('client received command', cmd);
+    }
 
+    private stateReceived(state: ClientState) {
+        console.log('client received state', state);
     }
 }
-
-/*
-import { LocalConnection } from '../LocalConnection';
-
-const connection = new LocalConnection(data => {
-    console.log('message received from worker', data)
-});
-
-connection.sendMessage('hullo');
-*/

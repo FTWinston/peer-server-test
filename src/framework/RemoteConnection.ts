@@ -1,11 +1,17 @@
 import { Connection, peerOptions } from './Connection';
 import Peer from 'peerjs';
+import { ServerToClientMessage, commandMessageIdentifier, stateMessageIdentifier } from './ServerToClientMessage';
 
-export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TServerState>
-extends Connection<TClientToServerCommand, TServerToClientCommand, TServerState> {
+export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TServerState, TClientState>
+extends Connection<TClientToServerCommand, TServerToClientCommand, TServerState, TClientState> {
     private conn: Peer.DataConnection;
 
-    constructor(serverId: string, receiveMessage: (data: any) => void, ready: () => void) {
+    constructor(
+        serverId: string,
+        private readonly receiveCommand: (cmd: TServerToClientCommand) => void,
+        private readonly receiveState: (state: TClientState) => void,
+        ready: () => void
+    ) {
         super();
 
         console.log(`connecting to server ${serverId}...`);
@@ -32,10 +38,16 @@ extends Connection<TClientToServerCommand, TServerToClientCommand, TServerState>
     
                 ready();
 
-                this.conn.on('data', data => {
-                    console.log(`data received from server:`, data);
-
-                    receiveMessage(data);
+                this.conn.on('data', (data: ServerToClientMessage<TServerToClientCommand, TClientState>) => {
+                    if (data[0] === commandMessageIdentifier) {
+                        this.receiveCommand(data[1]);
+                    }
+                    else if (data[0] === stateMessageIdentifier) {
+                        this.receiveState(data[1]);
+                    }
+                    else {
+                        console.log('Unrecognised message from server', data);
+                    }
                 });
             });
         });
