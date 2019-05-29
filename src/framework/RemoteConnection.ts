@@ -2,8 +2,8 @@ import { Connection, peerOptions } from './Connection';
 import Peer from 'peerjs';
 import { ServerToClientMessage, commandMessageIdentifier, stateMessageIdentifier } from './ServerToClientMessage';
 
-export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TServerState, TClientState>
-extends Connection<TClientToServerCommand, TServerToClientCommand, TServerState, TClientState> {
+export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
+extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
     private conn: Peer.DataConnection;
 
     constructor(

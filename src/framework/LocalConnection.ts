@@ -5,8 +5,8 @@ import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorker
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { commandMessageIdentifier, stateMessageIdentifier } from './ServerToClientMessage';
 
-export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TServerState, TClientState>
-extends Connection<TClientToServerCommand, TServerToClientCommand, TServerState, TClientState> {
+export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
+extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
     private worker: Worker;
 
     private readonly clientConnections = new Map<string, Peer.DataConnection>();

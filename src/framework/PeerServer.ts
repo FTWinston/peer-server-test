@@ -1,15 +1,13 @@
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 
-export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand, TServerState, TClientState>
+export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand, TClientState>
 {
     private readonly tickTimer: NodeJS.Timeout;
     
     private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void;
 
     protected readonly clients: string[] = [];
-
-    protected serverState: TServerState;
 
     private lastTickTime: number;
 

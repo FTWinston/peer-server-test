@@ -1,20 +1,20 @@
 import { PeerServer } from '../framework/PeerServer';
 import { ClientToServerCommand } from '../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../shared/ServerToClientCommand';
-import { ServerState } from '../shared/ServerState';
+import { ServerState } from './ServerState';
 import { ClientState } from '../shared/ClientState';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
-export class TestPeerServer extends PeerServer<ClientToServerCommand, ServerToClientCommand, ServerState, ClientState>
+export class TestPeerServer extends PeerServer<ClientToServerCommand, ServerToClientCommand, ClientState>
 {
+    private readonly serverState: ServerState = {
+        active: false,
+        players: [],
+    }
+
     constructor(worker: Worker) {
         super(worker, tickInterval);
-
-        this.serverState = {
-            active: false,
-            players: [],
-        };
     }
 
     protected clientJoined(who: string) {

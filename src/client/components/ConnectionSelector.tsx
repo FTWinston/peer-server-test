@@ -4,10 +4,10 @@ import { LocalConnection } from '../../framework/LocalConnection';
 import { RemoteConnection } from '../../framework/RemoteConnection';
 import { ClientToServerCommand } from '../../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
-import { ServerState } from '../../shared/ServerState';
+import { ServerState } from '../../server/ServerState';
 import { ClientState } from '../../shared/ClientState';
 
-export type TypedConnection = Connection<ClientToServerCommand, ServerToClientCommand, ServerState, ClientState>;
+export type TypedConnection = Connection<ClientToServerCommand, ServerToClientCommand, ClientState>;
 
 interface IProps {
     receiveCommand: (cmd: ServerToClientCommand) => void;
@@ -20,7 +20,7 @@ export const ConnectionSelector = (props: IProps) => {
     const ready = () => props.connectionSelected(connection);
 
     const selectLocal = () => {
-        connection = new LocalConnection<ClientToServerCommand, ServerToClientCommand, ServerState, ClientState>(
+        connection = new LocalConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
             ready
@@ -31,7 +31,7 @@ export const ConnectionSelector = (props: IProps) => {
     const [serverId, setServerId] = useState('');
 
     const selectRemote = () => {
-        connection = new RemoteConnection<ClientToServerCommand, ServerToClientCommand, ServerState, ClientState>(
+        connection = new RemoteConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
             serverId,
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
