@@ -3,10 +3,10 @@ export const enum ServerWorkerMessageOutType {
     Command,
 }
 
-export type ServerWorkerMessageOut<TServerToClientCommand, TServerState> = {
+export type ServerWorkerMessageOut<TServerToClientCommand, TClientEntity> = {
     type: ServerWorkerMessageOutType.State;
     who: string;
-    state: TServerState;
+    state: TClientEntity[];
 } | {
     type: ServerWorkerMessageOutType.Command;
     who?: string;

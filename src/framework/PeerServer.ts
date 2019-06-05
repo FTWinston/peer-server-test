@@ -1,32 +1,61 @@
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
+import { IEntity } from './IEntity';
+import { Client } from './Client';
 
-export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand, TClientState>
+type ClientSendState<TClientEntity> {
+    [key: number]: TClientEntity[]
+}
+
+export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand, TClientEntity extends IEntity>
 {
-    private readonly tickTimer: NodeJS.Timeout;
+    private tickTimer: NodeJS.Timeout | undefined;
     
-    private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void;
+    private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientEntity>) => void;
 
     protected readonly clients: string[] = [];
+    private readonly clientData: {[key:string]: Client<TClientEntity>} = {};
 
     private lastTickTime: number;
 
-    constructor(worker: Worker, tickInterval: number) {
+    constructor(worker: Worker, private readonly tickInterval: number) {
         this.sendMessage = message => worker.postMessage(message);
 
         worker.onmessage = e => this.receiveMessage(e.data);
 
-        this.lastTickTime = performance.now() - tickInterval;
-        this.tickTimer = setInterval(() => this.tick(), tickInterval);
+        this.resume();
+    }
+
+    // TODO: state? e.g. not started, active, paused, finished
+    public get isRunning() { return this.tickInterval !== undefined; }
+
+    public pause() {
+        if (this.tickTimer === undefined) {
+            return;
+        }
+
+        clearInterval(this.tickTimer);
+        this.tickTimer = undefined;
+    }
+
+    public resume() {
+        if (this.tickTimer !== undefined) {
+            return;
+        }
+
+        this.lastTickTime = performance.now() - this.tickInterval;
+        this.tickTimer = setInterval(() => this.tick(), this.tickInterval);
     }
 
     public receiveMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {
         switch (message.type) {
             case ServerWorkerMessageInType.Join:
+                this.clientData[message.who] = new Client<TClientEntity>();
                 this.clients.push(message.who);
                 this.clientJoined(message.who);
                 break;
             case ServerWorkerMessageInType.Quit:
+            delete this.clientData[message.who];
                 const pos = this.clients.indexOf(message.who);
                 if (pos !== -1) {
                     this.clients.splice(pos, 1);
@@ -78,5 +107,5 @@ export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand,
 
     protected abstract simulateTick(timestep: number): void;
 
-    protected abstract getStateToSendClient(who: string): TClientState;
+    protected abstract getStateToSendClient(who: string): TClientEntity[];
 }
