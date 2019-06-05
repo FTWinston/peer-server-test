@@ -1,15 +1,17 @@
 import { Connection, peerOptions } from './Connection';
 import Peer from 'peerjs';
-import { ServerToClientMessage, commandMessageIdentifier, stateMessageIdentifier } from './ServerToClientMessage';
+import { ServerToClientMessage, commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier } from './ServerToClientMessage';
+import { DeltaState, FullState } from './State';
 
-export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
-extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
+export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientEntity>
+extends Connection<TClientToServerCommand, TServerToClientCommand, TClientEntity> {
     private conn: Peer.DataConnection;
 
     constructor(
         serverId: string,
         private readonly receiveCommand: (cmd: TServerToClientCommand) => void,
-        private readonly receiveState: (state: TClientState) => void,
+        private readonly receiveState: (state: FullState<TClientEntity>) => void,
+        private readonly getExistingState: () => FullState<TClientEntity>,
         ready: () => void
     ) {
         super();
@@ -38,12 +40,18 @@ extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState>
     
                 ready();
 
-                this.conn.on('data', (data: ServerToClientMessage<TServerToClientCommand, TClientState>) => {
+                this.conn.on('data', (data: ServerToClientMessage<TServerToClientCommand, TClientEntity>) => {
                     if (data[0] === commandMessageIdentifier) {
                         this.receiveCommand(data[1]);
                     }
-                    else if (data[0] === stateMessageIdentifier) {
+                    else if (data[0] === fullStateMessageIdentifier) {
                         this.receiveState(data[1]);
+                    }
+                    else if (data[0] === deltaStateMessageIdentifier) {
+                        const delta = data[1];
+                        const existingState = this.getExistingState();
+                        this.applyDelta(existingState, delta);
+                        this.receiveState(existingState);
                     }
                     else {
                         console.log('Unrecognised message from server', data);

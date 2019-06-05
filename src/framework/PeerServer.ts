@@ -2,19 +2,15 @@ import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorker
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { IEntity } from './IEntity';
 import { Client } from './Client';
+import { DeltaState, FullState } from './State';
 
-type ClientSendState<TClientEntity> {
-    [key: number]: TClientEntity[]
-}
-
-export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand, TClientEntity extends IEntity>
-{
+export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand, TClientEntity extends IEntity> {
     private tickTimer: NodeJS.Timeout | undefined;
     
     private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientEntity>) => void;
 
     protected readonly clients: string[] = [];
-    private readonly clientData: {[key:string]: Client<TClientEntity>} = {};
+    private readonly clientData: Record<string, Client<TClientEntity>> = {};
 
     private lastTickTime: number;
 
@@ -55,7 +51,7 @@ export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand,
                 this.clientJoined(message.who);
                 break;
             case ServerWorkerMessageInType.Quit:
-            delete this.clientData[message.who];
+                delete this.clientData[message.who];
                 const pos = this.clients.indexOf(message.who);
                 if (pos !== -1) {
                     this.clients.splice(pos, 1);
@@ -77,7 +73,10 @@ export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand,
 
     protected abstract receiveCommandFromClient(who: string, command: TClientToServerCommand): void;
 
+    private tickId = 0;
+
     private tick() {
+        this.tickId ++;
         const tickStart = performance.now();
         const tickDuration = tickStart - this.lastTickTime;
         this.lastTickTime = tickStart;
@@ -86,13 +85,31 @@ export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand,
 
         this.simulateTick(tickDuration);
 
-        // TODO: send state delta to every client, not always full state
-
         for (const client of this.clients) {
+            const data = this.clientData[client];
+            this.sendState(data, client);
+        }
+    }
+
+    private sendState(data: Client<TClientEntity>, client: string) {
+        if (data.shouldSendFullState(this.tickId)) {
+            const clientState = this.getFullStateToSendClient(client);
+            data.sendFullState(this.tickId, clientState); // TODO: this doesn't send. Make it send, or change its name.
             this.sendMessage({
-                type: ServerWorkerMessageOutType.State,
+                type: ServerWorkerMessageOutType.FullState,
                 who: client,
-                state: this.getStateToSendClient(client),
+                tick: this.tickId,
+                state: clientState,
+            });
+        }
+        else {
+            const deltaState = this.getDeltaStateToSendClient(client);
+            const cumulativeDelta = data.sendDeltaState(this.tickId, deltaState); // TODO: this doesn't send. Make it send, or change its name.
+            this.sendMessage({
+                type: ServerWorkerMessageOutType.DeltaState,
+                who: client,
+                tick: this.tickId,
+                state: cumulativeDelta,
             });
         }
     }
@@ -107,5 +124,7 @@ export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand,
 
     protected abstract simulateTick(timestep: number): void;
 
-    protected abstract getStateToSendClient(who: string): TClientEntity[];
+    protected abstract getFullStateToSendClient(who: string): FullState<TClientEntity>;
+
+    protected abstract getDeltaStateToSendClient(who: string): DeltaState<TClientEntity>;
 }

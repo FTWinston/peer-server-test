@@ -1,8 +1,4 @@
-export interface ServerState {
-    active: boolean;
-    players: {
-        name: string;
-        x: number;
-        y: number;
-    }[];
-}
+import { ClientEntity } from '../shared/ClientState';
+
+// TODO: supertype of some sort, here
+export type ServerEntity = ClientEntity;

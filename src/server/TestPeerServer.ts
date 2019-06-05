@@ -1,39 +1,47 @@
 import { PeerServer } from '../framework/PeerServer';
 import { ClientToServerCommand } from '../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../shared/ServerToClientCommand';
-import { ServerState } from './ServerState';
-import { ClientState } from '../shared/ClientState';
+import { ServerEntity } from './ServerState';
+import { ClientEntity, Player } from '../shared/ClientState';
+import { FullState, DeltaState } from '../framework/State';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
-export class TestPeerServer extends PeerServer<ClientToServerCommand, ServerToClientCommand, ClientState>
+export class TestPeerServer extends PeerServer<ClientToServerCommand, ServerToClientCommand, ClientEntity>
 {
-    private readonly serverState: ServerState = {
-        active: false,
-        players: [],
-    }
+    private readonly serverState: FullState<ServerEntity>;
 
     constructor(worker: Worker) {
         super(worker, tickInterval);
     }
 
+    private playersByClientName = new Map<string, Player>();
+
+    private nextId: number = 1;
+
     protected clientJoined(who: string) {
         console.log(`${who} connected`);
 
-        this.serverState.players.push({
+        const id = this.nextId++;
+
+        const player: Player = {
+            id,
+            type: 'player',
             name: who,
             x: 0,
             y: 0,
-        });
+        }
+
+        this.playersByClientName.set(who, player);
+        this.serverState[id] = player;
     }
 
     protected clientQuit(who: string) {
         console.log(`${who} disconnected`);
 
-        const pos = this.serverState.players.findIndex(p => p.name === who);
-        if (pos !== -1) {
-            this.serverState.players.splice(pos, 1);
-        }
+        const playerId = this.playersByClientName.get(who).id;
+        this.playersByClientName.delete(who);
+        delete this.serverState[playerId];
     }
 
     public receiveCommandFromClient(who: string, command: ClientToServerCommand) {
@@ -41,7 +49,7 @@ export class TestPeerServer extends PeerServer<ClientToServerCommand, ServerToCl
             case 'left': {
                 console.log(`${who} moved left`);
 
-                const player = this.serverState.players.find(p => p.name === who);
+                const player = this.playersByClientName.get(who);
                 if (player !== undefined) {
                     player.x--;
                 }
@@ -50,7 +58,7 @@ export class TestPeerServer extends PeerServer<ClientToServerCommand, ServerToCl
             case 'right': {
                 console.log(`${who} moved right`);
 
-                const player = this.serverState.players.find(p => p.name === who);
+                const player = this.playersByClientName.get(who);
                 if (player !== undefined) {
                     player.x++;
                 }
@@ -66,9 +74,13 @@ export class TestPeerServer extends PeerServer<ClientToServerCommand, ServerToCl
         // TODO: simulate stuff
     }
 
-    protected getStateToSendClient(who: string): ServerState {
+    protected getFullStateToSendClient(who: string): FullState<ClientEntity> {
         // TODO: some filtering here?
-        // TODO: DELTA state, not full state each time
+        return this.serverState;
+    }
+
+    protected getDeltaStateToSendClient(who: string): DeltaState<ClientEntity> {
+        // TODO: DELTA, somehow
         return this.serverState;
     }
 }

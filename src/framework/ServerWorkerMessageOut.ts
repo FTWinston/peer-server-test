@@ -1,12 +1,19 @@
 export const enum ServerWorkerMessageOutType {
-    State,
+    FullState,
+    DeltaState,
     Command,
 }
 
 export type ServerWorkerMessageOut<TServerToClientCommand, TClientEntity> = {
-    type: ServerWorkerMessageOutType.State;
+    type: ServerWorkerMessageOutType.FullState;
     who: string;
-    state: TClientEntity[];
+    tick: number;
+    state: Record<number, TClientEntity>;
+} | {
+    type: ServerWorkerMessageOutType.DeltaState;
+    who: string;
+    tick: number;
+    state: Record<number, Partial<TClientEntity> | null>;
 } | {
     type: ServerWorkerMessageOutType.Command;
     who?: string;

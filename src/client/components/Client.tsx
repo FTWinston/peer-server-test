@@ -1,11 +1,14 @@
 import * as React from 'react';
 import { ConnectionSelector, TypedConnection } from './ConnectionSelector';
 import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
-import { ClientState } from '../../shared/ClientState';
+import { ClientEntity } from '../../shared/ClientState';
+import { FullState } from '../../framework/State';
 
 interface IState {
     connection?: TypedConnection;
 }
+
+let clientState: FullState<ClientEntity> = {};
 
 export class Client extends React.Component<{}, IState> {
     constructor(props: {}) {
@@ -17,7 +20,8 @@ export class Client extends React.Component<{}, IState> {
     render() {
         if (this.state.connection === undefined) {
             const commandReceived = (cmd: ServerToClientCommand) => this.commandReceived(cmd);
-            const stateReceived = (state: ClientState) => this.stateReceived(state);
+            const stateReceived = (state: FullState<ClientEntity>) => this.stateReceived(state);
+            const getState = () => clientState;
 
             const connectionSelected = (connection: TypedConnection) => {
                 this.setState({ connection });
@@ -29,6 +33,7 @@ export class Client extends React.Component<{}, IState> {
                 connectionSelected={connectionSelected}
                 receiveCommand={commandReceived}
                 receiveState={stateReceived}
+                getExistingState={getState}
             />
         }
 
@@ -47,7 +52,8 @@ export class Client extends React.Component<{}, IState> {
         console.log('client received command', cmd);
     }
 
-    private stateReceived(state: ClientState) {
+    private stateReceived(state: FullState<ClientEntity>) {
         console.log('client received state', state);
+        clientState = state;
     }
 }

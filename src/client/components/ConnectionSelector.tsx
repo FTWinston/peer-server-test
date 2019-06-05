@@ -4,14 +4,15 @@ import { LocalConnection } from '../../framework/LocalConnection';
 import { RemoteConnection } from '../../framework/RemoteConnection';
 import { ClientToServerCommand } from '../../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
-import { ServerState } from '../../server/ServerState';
-import { ClientState } from '../../shared/ClientState';
+import { ClientEntity } from '../../shared/ClientState';
+import { FullState } from '../../framework/State';
 
-export type TypedConnection = Connection<ClientToServerCommand, ServerToClientCommand, ClientState>;
+export type TypedConnection = Connection<ClientToServerCommand, ServerToClientCommand, ClientEntity>;
 
 interface IProps {
     receiveCommand: (cmd: ServerToClientCommand) => void;
-    receiveState: (state: ClientState) => void;
+    receiveState: (state: FullState<ClientEntity>) => void;
+    getExistingState: () => FullState<ClientEntity>;
     connectionSelected: (conn: TypedConnection) => void;
 }
 
@@ -20,9 +21,10 @@ export const ConnectionSelector = (props: IProps) => {
     const ready = () => props.connectionSelected(connection);
 
     const selectLocal = () => {
-        connection = new LocalConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
+        connection = new LocalConnection<ClientToServerCommand, ServerToClientCommand, ClientEntity>(
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
+            () => props.getExistingState(),
             ready
         );
     }
@@ -31,10 +33,11 @@ export const ConnectionSelector = (props: IProps) => {
     const [serverId, setServerId] = useState('');
 
     const selectRemote = () => {
-        connection = new RemoteConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
+        connection = new RemoteConnection<ClientToServerCommand, ServerToClientCommand, ClientEntity>(
             serverId,
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
+            () => props.getExistingState(),
             ready
         );
     }
