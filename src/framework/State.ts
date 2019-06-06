@@ -1,3 +1,3 @@
-export type FullState<TClientEntity> = Record<number, TClientEntity>;
+export class FullState<TClientEntity> extends Map<number, TClientEntity> { }
 
-export type DeltaState<TClientEntity> = Record<number, Partial<TClientEntity> | null>;
+export class DeltaState<TClientEntity> extends Map<number, Partial<TClientEntity> | null> { }

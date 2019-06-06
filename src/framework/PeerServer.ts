@@ -8,11 +8,11 @@ export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand,
     private tickTimer: NodeJS.Timeout | undefined;
     
     private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientEntity>) => void;
-
-    protected readonly clients: string[] = [];
-    private readonly clientData: Record<string, Client<TClientEntity>> = {};
+    private readonly clientData = new Map<string, Client<TClientEntity>>();
 
     private lastTickTime: number;
+
+    // protected get clients(): string[] { return Array.from(this.clientData.keys()); }
 
     constructor(worker: Worker, private readonly tickInterval: number) {
         this.sendMessage = message => worker.postMessage(message);
@@ -46,17 +46,11 @@ export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand,
     public receiveMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {
         switch (message.type) {
             case ServerWorkerMessageInType.Join:
-                this.clientData[message.who] = new Client<TClientEntity>();
-                this.clients.push(message.who);
+                this.clientData.set(message.who, new Client<TClientEntity>());
                 this.clientJoined(message.who);
                 break;
             case ServerWorkerMessageInType.Quit:
-                delete this.clientData[message.who];
-                const pos = this.clients.indexOf(message.who);
-                if (pos !== -1) {
-                    this.clients.splice(pos, 1);
-                    this.clientQuit(message.who);
-                }
+                this.clientData.delete(message.who);
                 break;
             case ServerWorkerMessageInType.Command:
                 console.log(`${message.who} issued a command`, message.command);
@@ -85,8 +79,7 @@ export abstract class PeerServer<TClientToServerCommand, TServerToClientCommand,
 
         this.simulateTick(tickDuration);
 
-        for (const client of this.clients) {
-            const data = this.clientData[client];
+        for (const [client, data] of this.clientData) {
             this.sendState(data, client);
         }
     }

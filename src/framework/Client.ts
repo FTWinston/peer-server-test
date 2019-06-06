@@ -6,12 +6,12 @@ const unacknowledgedDeltaTickInterval = 30; // If this many ticks go unacknowled
 export class Client<TClientEntity extends IEntity> {
     public lastAcknowledgedTick?: number;
 
-    private unacknowledgedDeltas: Record<number, DeltaState<TClientEntity>> = {};
+    private readonly unacknowledgedDeltas = new Map<number, DeltaState<TClientEntity>>();
 
     public acknowledge(tickId: number) {
-        for (const testTickId in this.unacknowledgedDeltas) {
+        for (const testTickId of this.unacknowledgedDeltas.keys()) {
             if ((testTickId as unknown as number) <= tickId) {
-                delete this.unacknowledgedDeltas[testTickId];
+                this.unacknowledgedDeltas.delete(testTickId);
             }
         }
     }
@@ -21,22 +21,23 @@ export class Client<TClientEntity extends IEntity> {
     }
 
     public sendDeltaState(tickId: number, delta: DeltaState<TClientEntity>) {
-        this.unacknowledgedDeltas[tickId] = delta;
+        this.unacknowledgedDeltas.set(tickId, delta);
 
-        const cumulativeDelta: DeltaState<TClientEntity> = {};
+        return this.combineUnacknowledgedDeltas();
+    }
+
+    private combineUnacknowledgedDeltas() {
+        const cumulativeDelta = new DeltaState<TClientEntity>();
         
-        // combine all unacknowledged deltas into one
-        for (const prevTickId in this.unacknowledgedDeltas) {
-            const prevDelta = this.unacknowledgedDeltas[prevTickId];
+        for (const [, delta] of this.unacknowledgedDeltas) {
+            for (const [entityId, entity] of delta) {
+                const cumulativeEntity = cumulativeDelta.get(entityId);
 
-            for (const prevEntityId in prevDelta) {
-                const entity = cumulativeDelta[prevEntityId as unknown as number];
-
-                if (!entity) {
-                    cumulativeDelta[prevEntityId] = Object.assign({}, prevDelta[prevEntityId])
+                if (cumulativeEntity === undefined) {
+                    cumulativeDelta.set(entityId, Object.assign({}, entity));
                 }
                 else {
-                    Object.assign(entity, prevDelta[prevEntityId]);
+                    Object.assign(cumulativeEntity, entity);
                 }
             }
         }
@@ -46,7 +47,7 @@ export class Client<TClientEntity extends IEntity> {
 
     public sendFullState(tickId: number, state: FullState<TClientEntity>) {
         // disregard any delta history, cos we're sending full states now
-        this.unacknowledgedDeltas = {};
-        this.unacknowledgedDeltas[tickId] = state;
+        this.unacknowledgedDeltas.clear();
+        this.unacknowledgedDeltas.set(tickId, state);
     }
 }

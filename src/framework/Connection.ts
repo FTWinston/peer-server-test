@@ -21,25 +21,29 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
     */
 
     protected applyDelta(state: FullState<TClientEntity>, delta: DeltaState<TClientEntity>) {
-        for (const entityId in delta) {
-            const diff = delta[entityId];
+        const added: number[] = [];
+        const modified: number[] = [];
+        const deleted: number[] = [];
 
+        for (const [entityId, diff] of delta) {
             if (diff === null) {
-                // TODO: fire deletion event
-                delete state[entityId];
+                deleted.push(entityId);
+                state.delete(entityId);
                 continue;
             }
 
-            const existing = state[entityId];
+            const existing = state.get(entityId);
 
-            if (existing === null) {
-                state[entityId] = diff as TClientEntity;
-                // TODO: fire creation event
+            if (existing === undefined) {
+                state.set(entityId, diff as TClientEntity)
+                added.push(entityId);
             }
             else {
-                Object.assign(state[entityId], diff);
-                // TODO: fire update event
+                Object.assign(existing, diff);
+                modified.push(entityId);
             }
         }
+
+        // TODO: output added, modified, deleted arrays of entity IDs
     }
 }
