@@ -1,4 +1,4 @@
-import { FullState, DeltaState } from './State';
+import { Delta } from './Delta';
 
 export const enum ServerWorkerMessageOutType {
     FullState,
@@ -6,16 +6,16 @@ export const enum ServerWorkerMessageOutType {
     Command,
 }
 
-export type ServerWorkerMessageOut<TServerToClientCommand, TClientEntity> = {
+export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> = {
     type: ServerWorkerMessageOutType.FullState;
     who: string;
-    tick: number;
-    state: FullState<TClientEntity>;
+    time: number;
+    state: TClientState;
 } | {
     type: ServerWorkerMessageOutType.DeltaState;
     who: string;
-    tick: number;
-    state: DeltaState<TClientEntity>;
+    time: number;
+    state: Delta<TClientState>;
 } | {
     type: ServerWorkerMessageOutType.Command;
     who?: string;

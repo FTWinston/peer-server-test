@@ -1,13 +1,13 @@
-import { PeerServer } from '../framework/PeerServer';
 import { ClientToServerCommand } from '../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../shared/ServerToClientCommand';
 import { ServerEntity } from './ServerState';
 import { ClientEntity, Player } from '../shared/ClientState';
 import { FullState, DeltaState } from '../framework/State';
+import { TickingServer } from '../framework/TickingServer';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
-export class TestPeerServer extends PeerServer<ClientToServerCommand, ServerToClientCommand, ClientEntity>
+export class TestPeerServer extends TickingServer<ClientToServerCommand, ServerToClientCommand, ClientEntity>
 {
     private readonly serverState: FullState<ServerEntity>;
 

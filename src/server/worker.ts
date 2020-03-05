@@ -1,4 +1,4 @@
-import { TestPeerServer } from './TestPeerServer';
+import { TestPeerServer } from './TestServer';
 
 export default {} as typeof Worker & (new () => Worker);
 
