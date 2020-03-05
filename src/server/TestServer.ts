@@ -1,31 +1,24 @@
 import { ClientToServerCommand } from '../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../shared/ServerToClientCommand';
-import { ServerEntity } from './ServerState';
-import { ClientEntity, Player } from '../shared/ClientState';
-import { FullState, DeltaState } from '../framework/State';
+import { ServerState } from './ServerState';
+import { Player } from '../shared/ClientState';
 import { TickingServer } from '../framework/TickingServer';
+import { Delta } from '../framework/Delta';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
-export class TestPeerServer extends TickingServer<ClientToServerCommand, ServerToClientCommand, ClientEntity>
+export class TestPeerServer extends TickingServer<ServerState, ServerState, ClientToServerCommand, ServerToClientCommand>
 {
-    private readonly serverState: FullState<ServerEntity>;
-
     constructor(worker: Worker) {
-        super(worker, tickInterval);
+        super(worker, {}, tickInterval);
     }
 
     private playersByClientName = new Map<string, Player>();
 
-    private nextId: number = 1;
-
-    protected clientJoined(who: string) {
+    protected clientJoined(who: string): Delta<ServerState> | undefined {
         console.log(`${who} connected`);
 
-        const id = this.nextId++;
-
         const player: Player = {
-            id,
             type: 'player',
             name: who,
             x: 0,
@@ -33,18 +26,24 @@ export class TestPeerServer extends TickingServer<ClientToServerCommand, ServerT
         }
 
         this.playersByClientName.set(who, player);
-        this.serverState[id] = player;
+
+        return {
+            [who]: player
+        };
     }
 
-    protected clientQuit(who: string) {
+    protected clientQuit(who: string): Delta<ServerState> | undefined {
         console.log(`${who} disconnected`);
 
-        const playerId = this.playersByClientName.get(who).id;
+        const playerId = this.playersByClientName.get(who);
         this.playersByClientName.delete(who);
-        delete this.serverState[playerId];
+
+        return {
+            [who]: undefined
+        };
     }
 
-    public receiveCommandFromClient(who: string, command: ClientToServerCommand) {
+    public receiveCommandFromClient(who: string, command: ClientToServerCommand): Delta<ServerState> | undefined {
         switch (command) {
             case 'left': {
                 console.log(`${who} moved left`);
@@ -52,8 +51,13 @@ export class TestPeerServer extends TickingServer<ClientToServerCommand, ServerT
                 const player = this.playersByClientName.get(who);
                 if (player !== undefined) {
                     player.x--;
+                    
+                    return {
+                        [who]: {
+                            x: player.x,
+                        }
+                    }
                 }
-                break;
             }
             case 'right': {
                 console.log(`${who} moved right`);
@@ -61,26 +65,34 @@ export class TestPeerServer extends TickingServer<ClientToServerCommand, ServerT
                 const player = this.playersByClientName.get(who);
                 if (player !== undefined) {
                     player.x++;
+
+                    return {
+                        [who]: {
+                            x: player.x,
+                        }
+                    }
                 }
-                break;
             }
             default: {
                 console.log(`${who} issued unhandled command`, command);
             }
         }
+
+        return undefined;
     }
 
-    protected simulateTick(timestep: number) {
+    protected simulateTick(timestep: number): Delta<ServerState> | undefined {
         // TODO: simulate stuff
+        return undefined;
     }
 
-    protected getFullStateToSendClient(who: string): FullState<ClientEntity> {
+    protected getFullStateToSendClient(who: string, serverState: ServerState): ServerState {
         // TODO: some filtering here?
-        return this.serverState;
+        return serverState;
     }
 
-    protected getDeltaStateToSendClient(who: string): DeltaState<ClientEntity> {
-        // TODO: DELTA, somehow
-        return this.serverState;
+    protected getDeltaStateToSendClient(who: string, serverDelta: Delta<ServerState>): Delta<ServerState> {
+        // TODO: some filtering here?
+        return serverDelta;
     }
 }

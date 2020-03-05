@@ -43,5 +43,5 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
         this.updateState(this.simulateTick(tickDuration));
     }
 
-    protected abstract simulateTick(timestep: number): undefined | Delta<TServerState>;
+    protected abstract simulateTick(timestep: number): Delta<TServerState> | undefined;
 }

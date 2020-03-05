@@ -1,4 +1,7 @@
-export type Delta<TState extends {}> = Partial<TState> | Record<keyof TState, undefined>;
+// A delta is a partial of partials, that also allows "undefined" to remove objects
+export type Delta<TState> = {
+    [P in keyof TState]?: undefined | Partial<TState[P]>;
+};
 
 export function applyDelta<TState extends {}>(state: Partial<TState>, delta: Delta<TState>) {
     for (const key in delta) {

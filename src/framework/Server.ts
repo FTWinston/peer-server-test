@@ -36,7 +36,7 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
         }
     }
 
-    protected updateState(stateDelta?: Partial<TServerState>) {
+    protected updateState(stateDelta?: Delta<TServerState>) {
         if (stateDelta === undefined) {
             return;
         }
@@ -53,10 +53,10 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
         }
     }
 
-    protected clientJoined(who: string): undefined | Delta<TServerState> { return undefined; }
-    protected clientQuit(who: string): undefined | Delta<TServerState> { return undefined; }
+    protected clientJoined(who: string): Delta<TServerState> | undefined { return undefined; }
+    protected clientQuit(who: string): Delta<TServerState> | undefined { return undefined; }
 
-    protected abstract receiveCommandFromClient(who: string, command: TClientToServerCommand): undefined | Partial<TServerState>;
+    protected abstract receiveCommandFromClient(who: string, command: TClientToServerCommand): Delta<TServerState> | undefined;
 
     private sendState(client: ClientData<TClientState, TServerToClientCommand>, stateDelta: Delta<TServerState>, time: number) {
         if (client.shouldSendFullState(time)) {
