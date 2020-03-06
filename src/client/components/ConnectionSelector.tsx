@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Connection } from '../../framework/Connection';
-import { LocalConnection } from '../../framework/LocalConnection';
 import { RemoteConnection } from '../../framework/RemoteConnection';
 import { ClientToServerCommand } from '../../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
 import { ClientState } from '../../shared/ClientState';
+import ServerWorker from '../../server/worker';
+import { LocalConnection } from '../../framework/LocalConnection';
 
 export type TypedConnection = Connection<ClientToServerCommand, ServerToClientCommand>;
 
@@ -21,6 +22,7 @@ export const ConnectionSelector = (props: IProps) => {
 
     const selectLocal = () => {
         connection = new LocalConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
+            new ServerWorker(),
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
             () => props.getExistingState(),

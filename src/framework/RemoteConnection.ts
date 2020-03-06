@@ -5,17 +5,18 @@ import { applyDelta } from './Delta';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
 
 export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
-extends Connection<TClientToServerCommand, TServerToClientCommand> {
+    extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
     private conn: Peer.DataConnection;
-
+    private peer: Peer;
+    
     constructor(
         serverId: string,
-        private readonly receiveCommand: (cmd: TServerToClientCommand) => void,
-        private readonly receiveState: (state: TClientState) => void,
-        private readonly getExistingState: () => TClientState,
+        receiveCommand: (cmd: TServerToClientCommand) => void,
+        receiveState: (state: TClientState) => void,
+        getExistingState: () => TClientState,
         ready: () => void
     ) {
-        super();
+        super(receiveCommand, receiveState, getExistingState);
 
         console.log(`connecting to server ${serverId}...`);
 
@@ -77,7 +78,7 @@ extends Connection<TClientToServerCommand, TServerToClientCommand> {
         this.peer.destroy();
     }
 
-    getServerId() { 
-        return this.conn.peer;
+    get localId() {
+        return this.peer.id;
     }
 }

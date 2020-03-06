@@ -42,7 +42,7 @@ export class Client extends React.Component<{}, IState> {
 
         return (
         <div>
-            Connected to server {this.state.connection.getServerId()}
+            Connected to server
 
             <button onClick={() => this.state.connection!.sendCommand('left')}>left</button>
             <button onClick={() => this.state.connection!.sendCommand('right')}>right</button>

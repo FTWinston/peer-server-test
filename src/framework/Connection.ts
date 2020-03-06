@@ -4,18 +4,18 @@ export const peerOptions: Peer.PeerJSOption = {
     // key: 'lwjd5qra8257b9',
 };
 
-export abstract class Connection<TClientToServerCommand, TServerToClientCommand> {
-    protected peer: Peer;
-    
+export abstract class Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
+    constructor(
+        protected readonly receiveCommand: (cmd: TServerToClientCommand) => void,
+        protected readonly receiveState: (state: TClientState) => void,
+        protected readonly getExistingState: () => TClientState,
+    ) {
+        
+    }
+
     abstract sendCommand(command: TClientToServerCommand): void;
 
     abstract disconnect(): void;
 
-    abstract getServerId(): string;
-
-    /*
-    protected receiveMessage: (e: any) => void;
-
-    protected receiveState: (e: any) => void;
-    */
+    abstract get localId(): string;
 }
