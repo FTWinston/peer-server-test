@@ -1,17 +1,14 @@
-import { IEntity } from '../framework/IEntity';
-
-export interface GameRules extends IEntity {
-    type: 'game',
+export interface GameRules {
     active: boolean,
 }
 
-export interface Player extends IEntity {
+export interface Player {
     type: 'player',
     name: string,
     x: number,
     y: number,
 }
 
-export type ClientEntity =
-GameRules |
-Player;
+export type ClientState = {
+    rules: GameRules;
+} | Record<string, Player>

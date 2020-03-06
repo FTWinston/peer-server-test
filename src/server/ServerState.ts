@@ -1,4 +1,4 @@
-import { ClientEntity } from '../shared/ClientState';
+import { ClientState } from '../shared/ClientState';
 
 // TODO: supertype of some sort, here
-export type ServerState = Record<string, ClientEntity>;
+export type ServerState = ClientState;

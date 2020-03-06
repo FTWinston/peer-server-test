@@ -4,15 +4,14 @@ import { LocalConnection } from '../../framework/LocalConnection';
 import { RemoteConnection } from '../../framework/RemoteConnection';
 import { ClientToServerCommand } from '../../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
-import { ClientEntity } from '../../shared/ClientState';
-import { FullState } from '../../framework/State';
+import { ClientState } from '../../shared/ClientState';
 
-export type TypedConnection = Connection<ClientToServerCommand, ServerToClientCommand, ClientEntity>;
+export type TypedConnection = Connection<ClientToServerCommand, ServerToClientCommand>;
 
 interface IProps {
     receiveCommand: (cmd: ServerToClientCommand) => void;
-    receiveState: (state: FullState<ClientEntity>) => void;
-    getExistingState: () => FullState<ClientEntity>;
+    receiveState: (state: ClientState) => void;
+    getExistingState: () => ClientState;
     connectionSelected: (conn: TypedConnection) => void;
 }
 
@@ -21,7 +20,7 @@ export const ConnectionSelector = (props: IProps) => {
     const ready = () => props.connectionSelected(connection);
 
     const selectLocal = () => {
-        connection = new LocalConnection<ClientToServerCommand, ServerToClientCommand, ClientEntity>(
+        connection = new LocalConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
             () => props.getExistingState(),
@@ -33,7 +32,7 @@ export const ConnectionSelector = (props: IProps) => {
     const [serverId, setServerId] = useState('');
 
     const selectRemote = () => {
-        connection = new RemoteConnection<ClientToServerCommand, ServerToClientCommand, ClientEntity>(
+        connection = new RemoteConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
             serverId,
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
