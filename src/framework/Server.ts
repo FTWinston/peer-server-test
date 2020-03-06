@@ -26,6 +26,10 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
                 this.clientData.delete(message.who);
                 this.updateState(this.clientQuit(message.who));
                 break;
+            case ServerWorkerMessageInType.Acknowledge:
+                const client = this.clientData.get(message.who);
+                client?.acknowledge(message.time);
+                break;
             case ServerWorkerMessageInType.Command:
                 console.log(`${message.who} issued a command`, message.command);
                 this.updateState(this.receiveCommandFromClient(message.who, message.command));

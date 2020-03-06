@@ -1,17 +1,18 @@
 import { Connection, peerOptions } from './Connection';
 import Peer from 'peerjs';
 import { ServerToClientMessage, commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier } from './ServerToClientMessage';
-import { DeltaState, FullState } from './State';
+import { applyDelta } from './Delta';
+import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
 
-export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientEntity>
-extends Connection<TClientToServerCommand, TServerToClientCommand, TClientEntity> {
+export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
+extends Connection<TClientToServerCommand, TServerToClientCommand> {
     private conn: Peer.DataConnection;
 
     constructor(
         serverId: string,
         private readonly receiveCommand: (cmd: TServerToClientCommand) => void,
-        private readonly receiveState: (state: FullState<TClientEntity>) => void,
-        private readonly getExistingState: () => FullState<TClientEntity>,
+        private readonly receiveState: (state: TClientState) => void,
+        private readonly getExistingState: () => TClientState,
         ready: () => void
     ) {
         super();
@@ -40,17 +41,19 @@ extends Connection<TClientToServerCommand, TServerToClientCommand, TClientEntity
     
                 ready();
 
-                this.conn.on('data', (data: ServerToClientMessage<TServerToClientCommand, TClientEntity>) => {
+                this.conn.on('data', (data: ServerToClientMessage<TServerToClientCommand, TClientState>) => {
                     if (data[0] === commandMessageIdentifier) {
                         this.receiveCommand(data[1]);
                     }
                     else if (data[0] === fullStateMessageIdentifier) {
+                        this.sendAcknowledgement(data[2]);
                         this.receiveState(data[1]);
                     }
                     else if (data[0] === deltaStateMessageIdentifier) {
+                        this.sendAcknowledgement(data[2]);
                         const delta = data[1];
                         const existingState = this.getExistingState();
-                        this.applyDelta(existingState, delta);
+                        applyDelta(existingState, delta);
                         this.receiveState(existingState);
                     }
                     else {
@@ -62,7 +65,11 @@ extends Connection<TClientToServerCommand, TServerToClientCommand, TClientEntity
     }
 
     sendCommand(command: TClientToServerCommand) {
-        this.conn.send(command);
+        this.conn.send([commandMessageIdentifier, command]);
+    }
+
+    sendAcknowledgement(time: number) {
+        this.conn.send([acknowledgeMessageIdentifier, time]);
     }
 
     disconnect() {

@@ -52,7 +52,7 @@ export class ClientData<TClientState, TServerToClientCommand> {
     }
 
     private combineUnacknowledgedDeltas() {
-        let cumulativeDelta: Delta<TClientState> = {};
+        let cumulativeDelta: Partial<Delta<TClientState>> = {};
         
         for (const [, delta] of this.unacknowledgedDeltas) {
             applyDelta(cumulativeDelta, delta);

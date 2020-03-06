@@ -4,18 +4,19 @@ import ServerWorker from '../server/worker';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier } from './ServerToClientMessage';
-import { FullState, DeltaState } from './State';
+import { Delta, applyDelta } from './Delta';
+import { ClientToServerMessage } from './ClientToServerMessage';
 
-export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TClientEntity>
-extends Connection<TClientToServerCommand, TServerToClientCommand, TClientEntity> {
+export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
+extends Connection<TClientToServerCommand, TServerToClientCommand> {
     private worker: Worker;
 
     private readonly clientConnections = new Map<string, Peer.DataConnection>();
 
     constructor(
         private readonly receiveCommand: (cmd: TServerToClientCommand) => void,
-        private readonly receiveState: (state: FullState<TClientEntity>) => void,
-        private readonly getExistingState: () => FullState<TClientEntity>,
+        private readonly receiveState: (state: TClientState) => void,
+        private readonly getExistingState: () => TClientState,
         ready: () => void
     ) {
         super();
@@ -62,28 +63,39 @@ extends Connection<TClientToServerCommand, TServerToClientCommand, TClientEntity
                 }); 
             })
 
-            conn.on('data', (data: TClientToServerCommand) => {
+            conn.on('data', (data: ClientToServerMessage<TClientToServerCommand>) => {
                 console.log(`data received from client ${conn.peer}:`, data);
+                const type = data[0];
+                const payload = data[1];
 
-                this.sendMessageToServer({
-                    type: ServerWorkerMessageInType.Command,
-                    who: conn.peer,
-                    command: data,
-                })
+                if (type === 'a') {
+                    this.sendMessageToServer({
+                        type: ServerWorkerMessageInType.Acknowledge,
+                        who: this.peer.id,
+                        time: payload as number,
+                    });
+                }
+                else {
+                    this.sendMessageToServer({
+                        type: ServerWorkerMessageInType.Command,
+                        who: conn.peer,
+                        command: payload as TClientToServerCommand,
+                    });
+                }
             });
         });
     }
 
-    private receiveMessageFromServer(message: ServerWorkerMessageOut<TServerToClientCommand, TClientEntity>) {
+    private receiveMessageFromServer(message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) {
         switch (message.type) {
             case ServerWorkerMessageOutType.Command:
                 this.dispatchCommandFromServer(message.who, message.command);
                 break;
             case ServerWorkerMessageOutType.FullState:
-                this.dispatchFullStateFromServer(message.who, message.state);
+                this.dispatchFullStateFromServer(message.who, message.state, message.time);
                 break;
             case ServerWorkerMessageOutType.DeltaState:
-                this.dispatchDeltaStateFromServer(message.who, message.state);
+                this.dispatchDeltaStateFromServer(message.who, message.state, message.time);
                 break;
             default:
                 console.log('received unrecognised message from worker', message);
@@ -109,25 +121,37 @@ extends Connection<TClientToServerCommand, TServerToClientCommand, TClientEntity
         }
     }
 
-    private dispatchFullStateFromServer(client: string, state: FullState<TClientEntity>) {
+    private dispatchFullStateFromServer(client: string, state: TClientState, time: number) {
         if (client === this.peer.id) {
+            this.sendMessageToServer({
+                type: ServerWorkerMessageInType.Acknowledge,
+                who: this.peer.id,
+                time: time,
+            });
+
             this.receiveState(state);
         }
         else {
             const conn = this.clientConnections.get(client);
-            conn.send([fullStateMessageIdentifier, state]);
+            conn.send([fullStateMessageIdentifier, state, time]);
         }
     }
 
-    private dispatchDeltaStateFromServer(client: string, state: DeltaState<TClientEntity>) {
+    private dispatchDeltaStateFromServer(client: string, state: Delta<TClientState>, time: number) {
         if (client === this.peer.id) {
+            this.sendMessageToServer({
+                type: ServerWorkerMessageInType.Acknowledge,
+                who: this.peer.id,
+                time: time,
+            });
+
             const existingState = this.getExistingState();
-            this.applyDelta(existingState, state);
+            applyDelta(existingState, state);
             this.receiveState(existingState);
         }
         else {
             const conn = this.clientConnections.get(client);
-            conn.send([deltaStateMessageIdentifier, state]);
+            conn.send([deltaStateMessageIdentifier, state, time]);
         }
     }
 

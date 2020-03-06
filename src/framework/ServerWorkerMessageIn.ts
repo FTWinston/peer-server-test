@@ -1,6 +1,7 @@
 export const enum ServerWorkerMessageInType {
     Join,
     Quit,
+    Acknowledge,
     Command,
 }
 
@@ -11,6 +12,10 @@ export type ServerWorkerMessageIn<TClientToServerCommand> = {
 } | {
     type: ServerWorkerMessageInType.Join;
     who: string;
+} | {
+    type: ServerWorkerMessageInType.Acknowledge;
+    who: string;
+    time: number;
 } | {
     type: ServerWorkerMessageInType.Quit;
     who: string;
