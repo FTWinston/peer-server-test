@@ -4,16 +4,15 @@ import { ClientData } from './ClientData';
 import { Delta, applyDelta } from './Delta';
 
 export abstract class Server<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> {
-    private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void;
-
     private readonly clientData = new Map<string, ClientData<TClientState, TServerToClientCommand>>();
 
     private state: TServerState;
 
-    constructor(worker: Worker, initialState: TServerState) {
+    constructor(
+        initialState: TServerState,
+        private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void
+    ) {
         this.state = initialState;
-        this.sendMessage = worker.postMessage;
-        worker.onmessage = e => this.receiveMessage(e.data);
     }
 
     public receiveMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {

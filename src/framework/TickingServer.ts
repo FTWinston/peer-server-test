@@ -1,5 +1,6 @@
 import { Server } from './Server';
 import { Delta } from './Delta';
+import { ServerWorkerMessageOut } from './ServerWorkerMessageOut';
 
 export abstract class TickingServer<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> 
     extends Server<TServerState, TClientState, TClientToServerCommand, TServerToClientCommand>
@@ -7,8 +8,12 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
     private tickTimer: NodeJS.Timeout | undefined;
     private lastTickTime: number;
 
-    constructor(worker: Worker, initialState: TServerState, private readonly tickInterval: number) {
-        super(worker, initialState);
+    constructor(
+        initialState: TServerState,
+        sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void,
+        private readonly tickInterval: number
+    ) {
+        super(initialState, sendMessage);
         this.resume();
     }
 

@@ -4,13 +4,16 @@ import { ServerState } from './ServerState';
 import { Player } from '../shared/ClientState';
 import { TickingServer } from '../framework/TickingServer';
 import { Delta } from '../framework/Delta';
+import { ServerWorkerMessageOut } from '../framework/ServerWorkerMessageOut';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
-export class TestPeerServer extends TickingServer<ServerState, ServerState, ClientToServerCommand, ServerToClientCommand>
+export class TestServer extends TickingServer<ServerState, ServerState, ClientToServerCommand, ServerToClientCommand>
 {
-    constructor(worker: Worker) {
-        super(worker, {}, tickInterval);
+    constructor(
+        sendMessage: (message: ServerWorkerMessageOut<ServerToClientCommand, ServerState>) => void
+    ) {
+        super({}, sendMessage, tickInterval);
     }
 
     private playersByClientName = new Map<string, Player>();
