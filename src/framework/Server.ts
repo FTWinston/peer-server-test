@@ -67,7 +67,7 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
             client.sendFullState(time, clientState);
         }
         else {
-            const clientDelta = this.getDeltaStateToSendClient(client.id, stateDelta);
+            const clientDelta = this.getDeltaStateToSendClient(client.id, stateDelta, this.state);
             client.sendDeltaState(time, clientDelta);
         }
     }
@@ -82,5 +82,5 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
 
     protected abstract getFullStateToSendClient(who: string, serverState: TServerState): TClientState;
 
-    protected abstract getDeltaStateToSendClient(who: string, serverDelta: Delta<TServerState>): Delta<TClientState>;
+    protected abstract getDeltaStateToSendClient(who: string, serverDelta: Delta<TServerState>, fullState: TServerState): Delta<TClientState>;
 }

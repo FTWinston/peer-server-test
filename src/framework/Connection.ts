@@ -5,6 +5,10 @@ export const peerOptions: Peer.PeerJSOption = {
     // key: 'lwjd5qra8257b9',
 };
 
+export const peerConnectOption: Peer.PeerConnectOption = {
+    reliable: false,
+};
+
 export abstract class Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
     constructor(
         initialState: TClientState,

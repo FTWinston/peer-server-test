@@ -1,4 +1,4 @@
-import { Connection, peerOptions } from './Connection';
+import { Connection, peerOptions, peerConnectOption } from './Connection';
 import Peer from 'peerjs';
 import { ServerToClientMessage, commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
@@ -32,7 +32,7 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
         this.peer.on('open', id => {
             console.log(`local client's peer ID is ${id}`);
 
-            this.conn = this.peer.connect(serverId);
+            this.conn = this.peer.connect(serverId, peerConnectOption);
 
             this.conn.on('open', () => {
                 console.log(`connected to server`);
