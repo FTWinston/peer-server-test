@@ -13,6 +13,10 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
         private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void
     ) {
         this.state = initialState;
+
+        sendMessage({
+            type: ServerWorkerMessageOutType.Ready,
+        });
     }
 
     public receiveMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {

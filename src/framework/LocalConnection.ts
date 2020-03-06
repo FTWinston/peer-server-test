@@ -18,65 +18,65 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
         receivedState: (oldState: TClientState) => void,
         ready: () => void
     ) {
-        super(initialState, worker, receiveCommand, receivedState, () => {});
-        
-        this.peer = new Peer(peerOptions);
+        super(initialState, worker, receiveCommand, receivedState, () => {
+            this.peer = new Peer(peerOptions);
 
-        console.log('peer created', this.peer);
-
-        this.peer.on('error', err => {
-            console.log('local connection peer error', err);
+            console.log('peer created', this.peer);
+    
+            this.peer.on('error', err => {
+                console.log('local connection peer error', err);
+            });
+    
+            this.peer.on('disconnected', () => {
+                console.log('local connection peer has been disconnected');
+            });
+    
+            this.peer.on('open', id => {
+                console.log(`local server's peer ID is ${id}`);
+                this.joinLocalServer();
+                ready();
+            });
+    
+            this.peer.on('connection', conn => this.peerConnected(conn));
         });
+    }
 
-        this.peer.on('disconnected', () => {
-            console.log('local connection peer has been disconnected');
+    private peerConnected(conn: Peer.DataConnection) {
+        console.log(`Peer connected: ${conn.peer}`);
+        // TODO: if this peer identifier is already in use ... ?
+        this.clientConnections.set(conn.peer, conn);
+        this.sendMessageToServer({
+            type: ServerWorkerMessageInType.Join,
+            who: conn.peer,
         });
-
-        this.peer.on('open', id => {
-            console.log(`local server's peer ID is ${id}`);
-
-            ready();
-        });
-
-        this.peer.on('connection', conn => {
-            console.log(`Peer connected: ${conn.peer}`);
-
-            // TODO: if this peer identifier is already in use ... ?
-            this.clientConnections.set(conn.peer, conn);
-
+        conn.on('close', () => {
+            this.clientConnections.delete(conn.peer);
             this.sendMessageToServer({
-                type: ServerWorkerMessageInType.Join,
+                type: ServerWorkerMessageInType.Quit,
                 who: conn.peer,
             });
-
-            conn.on('close', () => {
-                this.clientConnections.delete(conn.peer);
-
-                this.sendMessageToServer({
-                    type: ServerWorkerMessageInType.Quit,
-                    who: conn.peer,
-                }); 
-            })
-
-            conn.on('data', (data: ClientToServerMessage<TClientToServerCommand>) => {
-                console.log(`data received from client ${conn.peer}:`, data);
-                
-                if (data[0] === 'a') {
-                    this.sendMessageToServer({
-                        type: ServerWorkerMessageInType.Acknowledge,
-                        who: this.peer.id,
-                        time: data[1],
-                    });
-                }
-                else {
-                    this.sendMessageToServer({
-                        type: ServerWorkerMessageInType.Command,
-                        who: conn.peer,
-                        command: data[1],
-                    });
-                }
-            });
         });
+        conn.on('data', (data: ClientToServerMessage<TClientToServerCommand>) => {
+            console.log(`data received from client ${conn.peer}:`, data);
+            if (data[0] === 'a') {
+                this.sendMessageToServer({
+                    type: ServerWorkerMessageInType.Acknowledge,
+                    who: this.peer.id,
+                    time: data[1],
+                });
+            }
+            else {
+                this.sendMessageToServer({
+                    type: ServerWorkerMessageInType.Command,
+                    who: conn.peer,
+                    command: data[1],
+                });
+            }
+        });
+    }
+
+    protected onServerReady() {
+        // DON'T send it a join message until the peer is initialized
     }
 
     protected dispatchCommandFromServer(client: string | undefined, command: TServerToClientCommand) {

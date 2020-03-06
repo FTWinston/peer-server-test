@@ -17,13 +17,10 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
         
         this.worker.onmessage = e => this.receiveMessageFromServer(e.data);
 
-        this.sendMessageToServer({
-            type: ServerWorkerMessageInType.Join,
-            who: this.localId,
-        });
-
-        ready();
+        this.ready = ready;
     }
+
+    private ready?: () => void;
 
     private receiveMessageFromServer(message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) {
         switch (message.type) {
@@ -36,10 +33,28 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
             case ServerWorkerMessageOutType.DeltaState:
                 this.dispatchDeltaStateFromServer(message.who, message.state, message.time);
                 break;
+            case ServerWorkerMessageOutType.Ready:
+                if (this.ready) {
+                    this.onServerReady();
+                    this.ready();
+                    delete this.ready;
+                }
+                break;
             default:
                 console.log('received unrecognised message from worker', message);
                 break;
         }
+    }
+
+    protected joinLocalServer() {
+        this.sendMessageToServer({
+            type: ServerWorkerMessageInType.Join,
+            who: this.localId,
+        });
+    }
+
+    protected onServerReady() {
+        this.joinLocalServer();
     }
 
     protected dispatchCommandFromServer(client: string | undefined, command: TServerToClientCommand) {
