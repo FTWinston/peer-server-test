@@ -24,7 +24,6 @@ export class Client extends React.Component<{}, IState> {
         if (this.state.connection === undefined) {
             const commandReceived = (cmd: ServerToClientCommand) => this.commandReceived(cmd);
             const stateReceived = (state: ClientState) => this.stateReceived(state);
-            const getState = () => clientState;
 
             const connectionSelected = (connection: TypedConnection) => {
                 this.setState({ connection });
@@ -32,11 +31,11 @@ export class Client extends React.Component<{}, IState> {
                 connection.sendCommand('shoot');
             }
 
+            // TODO: expose the connection's state (or the connection itself, more likely)
             return <ConnectionSelector
                 connectionSelected={connectionSelected}
                 receiveCommand={commandReceived}
                 receiveState={stateReceived}
-                getExistingState={getState}
             />
         }
 

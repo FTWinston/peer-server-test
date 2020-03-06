@@ -1,7 +1,6 @@
 import { Connection, peerOptions } from './Connection';
 import Peer from 'peerjs';
 import { ServerToClientMessage, commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier } from './ServerToClientMessage';
-import { applyDelta } from './Delta';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
 
 export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
@@ -10,13 +9,13 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
     private peer: Peer;
     
     constructor(
+        initialState: TClientState,
         serverId: string,
         receiveCommand: (cmd: TServerToClientCommand) => void,
-        receiveState: (state: TClientState) => void,
-        getExistingState: () => TClientState,
+        receivedState: (oldState: TClientState) => void,
         ready: () => void
     ) {
-        super(receiveCommand, receiveState, getExistingState);
+        super(initialState, receiveCommand, receivedState);
 
         console.log(`connecting to server ${serverId}...`);
 
@@ -48,14 +47,11 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
                     }
                     else if (data[0] === fullStateMessageIdentifier) {
                         this.sendAcknowledgement(data[2]);
-                        this.receiveState(data[1]);
+                        this.receiveFullState(data[1]);
                     }
                     else if (data[0] === deltaStateMessageIdentifier) {
                         this.sendAcknowledgement(data[2]);
-                        const delta = data[1];
-                        const existingState = this.getExistingState();
-                        applyDelta(existingState, delta);
-                        this.receiveState(existingState);
+                        this.receiveDeltaState(data[1]);
                     }
                     else {
                         console.log('Unrecognised message from server', data);

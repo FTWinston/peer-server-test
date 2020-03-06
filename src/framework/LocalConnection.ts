@@ -12,13 +12,13 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
     private readonly clientConnections = new Map<string, Peer.DataConnection>();
 
     constructor(
+        initialState: TClientState,
         worker: Worker,
         receiveCommand: (cmd: TServerToClientCommand) => void,
-        receiveState: (state: TClientState) => void,
-        getExistingState: () => TClientState,
+        receivedState: (oldState: TClientState) => void,
         ready: () => void
     ) {
-        super(worker, receiveCommand, receiveState, getExistingState, () => {});
+        super(initialState, worker, receiveCommand, receivedState, () => {});
         
         this.peer = new Peer(peerOptions);
 
@@ -60,21 +60,19 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
 
             conn.on('data', (data: ClientToServerMessage<TClientToServerCommand>) => {
                 console.log(`data received from client ${conn.peer}:`, data);
-                const type = data[0];
-                const payload = data[1];
-
-                if (type === 'a') {
+                
+                if (data[0] === 'a') {
                     this.sendMessageToServer({
                         type: ServerWorkerMessageInType.Acknowledge,
                         who: this.peer.id,
-                        time: payload as number,
+                        time: data[1],
                     });
                 }
                 else {
                     this.sendMessageToServer({
                         type: ServerWorkerMessageInType.Command,
                         who: conn.peer,
-                        command: payload as TClientToServerCommand,
+                        command: data[1],
                     });
                 }
             });

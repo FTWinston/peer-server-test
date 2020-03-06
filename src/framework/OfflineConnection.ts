@@ -1,19 +1,19 @@
 import { Connection } from './Connection';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
-import { Delta, applyDelta } from './Delta';
+import { Delta } from './Delta';
 
 export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
     extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
 
     constructor(
+        initialState: TClientState,
         private readonly worker: Worker,
         receiveCommand: (cmd: TServerToClientCommand) => void,
-        receiveState: (state: TClientState) => void,
-        getExistingState: () => TClientState,
+        receivedState: (oldState: TClientState) => void,
         ready: () => void
     ) {
-        super(receiveCommand, receiveState, getExistingState);
+        super(initialState, receiveCommand, receivedState);
         
         this.worker.onmessage = e => this.receiveMessageFromServer(e.data);
 
@@ -53,7 +53,7 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
             time: time,
         });
 
-        this.receiveState(state);
+        this.receiveFullState(state);
     }
 
     protected dispatchDeltaStateFromServer(client: string, state: Delta<TClientState>, time: number) {
@@ -63,9 +63,7 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
             time: time,
         });
 
-        const existingState = this.getExistingState();
-        applyDelta(existingState, state);
-        this.receiveState(existingState);
+        this.receiveDeltaState(state);
     }
 
     protected sendMessageToServer(message: ServerWorkerMessageIn<TClientToServerCommand>) {
