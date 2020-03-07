@@ -1,4 +1,4 @@
-import { peerOptions } from './Connection';
+import { peerOptions, ConnectionMetadata } from './Connection';
 import Peer from 'peerjs';
 import { ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier } from './ServerToClientMessage';
@@ -13,6 +13,7 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
 
     constructor(
         initialState: TClientState,
+        clientName: string,
         worker: Worker,
         receiveCommand: (cmd: TServerToClientCommand) => void,
         receivedState: (oldState: TClientState) => void,
@@ -33,7 +34,13 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
     
             this.peer.on('open', id => {
                 console.log(`local server's peer ID is ${id}`);
-                this.joinLocalServer();
+                
+                this.sendMessageToServer({
+                    type: ServerWorkerMessageInType.Join,
+                    who: this.localId,
+                    name: clientName,
+                });
+                
                 ready();
             });
     
@@ -42,12 +49,21 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
     }
 
     private peerConnected(conn: Peer.DataConnection) {
+        const name = conn.metadata?.name?.trim();
+
+        if (!name || [ ...this.clientConnections.values() ].find(c => c.metadata.name.trim() === name)) {
+            // TODO: send invalid name message
+            conn.close();
+            return;
+        }
+
         console.log(`Peer connected: ${conn.peer}`);
-        // TODO: if this peer identifier is already in use ... ?
+
         this.clientConnections.set(conn.peer, conn);
         this.sendMessageToServer({
             type: ServerWorkerMessageInType.Join,
             who: conn.peer,
+            name,
         });
         conn.on('close', () => {
             this.clientConnections.delete(conn.peer);

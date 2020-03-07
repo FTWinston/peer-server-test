@@ -46,15 +46,12 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
         }
     }
 
-    protected joinLocalServer() {
+    protected onServerReady() {
         this.sendMessageToServer({
             type: ServerWorkerMessageInType.Join,
             who: this.localId,
+            name: this.localId,
         });
-    }
-
-    protected onServerReady() {
-        this.joinLocalServer();
     }
 
     protected dispatchCommandFromServer(client: string | undefined, command: TServerToClientCommand) {

@@ -15,6 +15,8 @@ interface IProps {
     connectionSelected: (conn: TypedConnection) => void;
 }
 
+const clientName = 'TODO enter this';
+
 export const ConnectionSelector = (props: IProps) => {
     let connection: TypedConnection;
     const ready = () => props.connectionSelected(connection);
@@ -26,6 +28,7 @@ export const ConnectionSelector = (props: IProps) => {
                     active: false
                 }
             },
+            clientName,
             new ServerWorker(),
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
@@ -43,6 +46,7 @@ export const ConnectionSelector = (props: IProps) => {
                 }
             },
             serverId,
+            clientName,
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
             ready

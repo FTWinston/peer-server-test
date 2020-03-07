@@ -5,6 +5,7 @@ import { Player } from '../shared/ClientState';
 import { TickingServer } from '../framework/TickingServer';
 import { Delta } from '../framework/Delta';
 import { ServerWorkerMessageOut } from '../framework/ServerWorkerMessageOut';
+import { ClientInfo } from '../framework/ClientInfo';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
@@ -18,66 +19,66 @@ export class TestServer extends TickingServer<ServerState, ServerState, ClientTo
 
     private playersByClientName = new Map<string, Player>();
 
-    protected clientJoined(who: string): Delta<ServerState> | undefined {
-        console.log(`${who} connected`);
+    protected clientJoined(client: ClientInfo): Delta<ServerState> | undefined {
+        console.log(`${client.name} connected`);
 
         const player: Player = {
             type: 'player',
-            name: who,
+            name: client.name,
             x: 0,
             y: 0,
         }
 
-        this.playersByClientName.set(who, player);
+        this.playersByClientName.set(client.name, player);
 
         return {
-            [who]: player
+            [client.name]: player
         };
     }
 
-    protected clientQuit(who: string): Delta<ServerState> | undefined {
-        console.log(`${who} disconnected`);
+    protected clientQuit(client: ClientInfo): Delta<ServerState> | undefined {
+        console.log(`${client.name} disconnected`);
 
-        const playerId = this.playersByClientName.get(who);
-        this.playersByClientName.delete(who);
+        const playerId = this.playersByClientName.get(client.name);
+        this.playersByClientName.delete(client.name);
 
         return {
-            [who]: undefined
+            [client.name]: undefined
         };
     }
 
-    public receiveCommandFromClient(who: string, command: ClientToServerCommand): Delta<ServerState> | undefined {
+    public receiveCommandFromClient(client: ClientInfo, command: ClientToServerCommand): Delta<ServerState> | undefined {
         switch (command) {
             case 'left': {
-                console.log(`${who} moved left`);
+                console.log(`${client.name} moved left`);
 
-                const player = this.playersByClientName.get(who);
+                const player = this.playersByClientName.get(client.id);
                 if (player !== undefined) {
                     player.x--;
                     
                     return {
-                        [who]: {
+                        [client.name]: {
                             x: player.x,
                         }
                     }
                 }
             }
             case 'right': {
-                console.log(`${who} moved right`);
+                console.log(`${client.name} moved right`);
 
-                const player = this.playersByClientName.get(who);
+                const player = this.playersByClientName.get(client.name);
                 if (player !== undefined) {
                     player.x++;
 
                     return {
-                        [who]: {
+                        [client.name]: {
                             x: player.x,
                         }
                     }
                 }
             }
             default: {
-                console.log(`${who} issued unhandled command`, command);
+                console.log(`${client.name} issued unhandled command`, command);
             }
         }
 
@@ -89,12 +90,12 @@ export class TestServer extends TickingServer<ServerState, ServerState, ClientTo
         return undefined;
     }
 
-    protected getFullStateToSendClient(who: string, serverState: ServerState): ServerState {
+    protected getFullStateToSendClient(client: ClientInfo, serverState: ServerState): ServerState {
         // TODO: some filtering here?
         return serverState;
     }
 
-    protected getDeltaStateToSendClient(who: string, serverDelta: Delta<ServerState>): Delta<ServerState> {
+    protected getDeltaStateToSendClient(client: ClientInfo, serverDelta: Delta<ServerState>): Delta<ServerState> {
         // TODO: some filtering here?
         return serverDelta;
     }

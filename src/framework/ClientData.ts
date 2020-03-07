@@ -1,5 +1,6 @@
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { Delta, applyDelta } from './Delta';
+import { ClientInfo } from './ClientInfo';
 
 const unacknowledgedDeltaInterval = 1000; // If we go for this may milliseconds with no acknowledgements, we give up on deltas and start sending full states
 
@@ -9,7 +10,7 @@ export class ClientData<TClientState, TServerToClientCommand> {
     private readonly unacknowledgedDeltas = new Map<number, Delta<TClientState>>();
 
     public constructor(
-        public readonly id: string,
+        public readonly info: ClientInfo,
         private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void
     ) { }
 
@@ -32,7 +33,7 @@ export class ClientData<TClientState, TServerToClientCommand> {
 
         this.sendMessage({
             type: ServerWorkerMessageOutType.FullState,
-            who: this.id,
+            who: this.info.id,
             time,
             state,
         });
@@ -45,7 +46,7 @@ export class ClientData<TClientState, TServerToClientCommand> {
 
         this.sendMessage({
             type: ServerWorkerMessageOutType.DeltaState,
-            who: this.id,
+            who: this.info.id,
             time,
             state: cumulativeDelta,
         });
