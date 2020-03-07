@@ -43,7 +43,7 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
         const tickDuration = tickStart - this.lastTickTime;
         this.lastTickTime = tickStart;
 
-        console.log(`server is ticking`, tickStart);
+        console.log(`server is ticking`, Math.round(tickStart));
 
         this.updateState(this.simulateTick(tickDuration));
     }
