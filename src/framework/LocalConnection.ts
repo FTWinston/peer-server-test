@@ -1,10 +1,11 @@
 import { peerOptions, ConnectionMetadata } from './Connection';
 import Peer from 'peerjs';
 import { ServerWorkerMessageInType } from './ServerWorkerMessageIn';
-import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier } from './ServerToClientMessage';
+import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier } from './ServerToClientMessage';
 import { Delta } from './Delta';
 import { ClientToServerMessage } from './ClientToServerMessage';
 import { OfflineConnection } from './OfflineConnection';
+import { isValidName } from './ClientInfo';
 
 export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
     extends OfflineConnection<TClientToServerCommand, TServerToClientCommand, TClientState> {
@@ -20,6 +21,12 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
         ready: () => void
     ) {
         super(initialState, worker, receiveCommand, receivedState, () => {
+            if (!isValidName(clientName)) {
+                console.log('Local player has an invalid name, aborting');
+                worker.terminate();
+                return;
+            }
+
             this.peer = new Peer(peerOptions);
 
             console.log('peer created', this.peer);
@@ -40,7 +47,7 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
                     who: this.localId,
                     name: clientName,
                 });
-                
+
                 ready();
             });
     
@@ -49,21 +56,28 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
     }
 
     private peerConnected(conn: Peer.DataConnection) {
-        const name = conn.metadata?.name?.trim();
+        const clientName: string | undefined = conn.metadata?.name?.trim();
 
-        if (!name || [ ...this.clientConnections.values() ].find(c => c.metadata.name.trim() === name)) {
-            // TODO: send invalid name message
+        if (!clientName || !isValidName(clientName)) {
+            conn.send([errorMessageIdentifier, 'That name is not valid']);
             conn.close();
+            console.log(`Rejected connection from a peer with an invalid name: ${clientName}`);
+            return;
+        }
+        else if ([ ...this.clientConnections.values() ].find(c => c.metadata.name.trim() === clientName)) {
+            conn.send([errorMessageIdentifier, 'That name is already in use']);
+            conn.close();
+            console.log(`Rejected connection from a peer with a name that's already in use: ${clientName}`);
             return;
         }
 
-        console.log(`Peer connected: ${conn.peer}`);
+        console.log(`Peer connected: ${clientName}`);
 
         this.clientConnections.set(conn.peer, conn);
         this.sendMessageToServer({
             type: ServerWorkerMessageInType.Join,
             who: conn.peer,
-            name,
+            name: clientName,
         });
         conn.on('close', () => {
             this.clientConnections.delete(conn.peer);

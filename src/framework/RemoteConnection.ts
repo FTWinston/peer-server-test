@@ -1,6 +1,6 @@
 import { Connection, peerOptions, ConnectionMetadata } from './Connection';
 import Peer from 'peerjs';
-import { ServerToClientMessage, commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier } from './ServerToClientMessage';
+import { ServerToClientMessage, commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
 
 export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
@@ -14,6 +14,7 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
         clientName: string,
         receiveCommand: (cmd: TServerToClientCommand) => void,
         receivedState: (oldState: TClientState) => void,
+        private readonly receivedError: (message: string) => void,
         ready: () => void
     ) {
         super(initialState, receiveCommand, receivedState);
@@ -60,6 +61,9 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
                     else if (data[0] === deltaStateMessageIdentifier) {
                         this.sendAcknowledgement(data[2]);
                         this.receiveDeltaState(data[1]);
+                    }
+                    else if (data[0] === errorMessageIdentifier) {
+                        this.receivedError(data[1]);
                     }
                     else {
                         console.log('Unrecognised message from server', data);

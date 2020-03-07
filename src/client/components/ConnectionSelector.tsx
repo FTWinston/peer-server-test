@@ -49,6 +49,7 @@ export const ConnectionSelector = (props: IProps) => {
             clientName,
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
+            msg => console.error(msg),
             ready
         );
     }
