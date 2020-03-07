@@ -1,7 +1,15 @@
-import { Connection, peerOptions, ConnectionMetadata } from './Connection';
+import { Connection, peerOptions, ConnectionMetadata, ConnectionParameters } from './Connection';
 import Peer from 'peerjs';
 import { ServerToClientMessage, commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
+
+export interface RemoteConnectionParameters<TServerToClientCommand, TClientState>
+    extends ConnectionParameters<TServerToClientCommand, TClientState>
+{
+    initialState: TClientState,
+    serverId: string,
+    clientName: string,
+}
 
 export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
     extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
@@ -9,17 +17,12 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
     private peer: Peer;
     
     constructor(
-        initialState: TClientState,
-        serverId: string,
-        clientName: string,
-        receiveCommand: (cmd: TServerToClientCommand) => void,
-        receivedState: (oldState: TClientState) => void,
-        private readonly receivedError: (message: string) => void,
-        ready: () => void
+        params: RemoteConnectionParameters<TServerToClientCommand, TClientState>,
+        ready: () => void,
     ) {
-        super(initialState, receiveCommand, receivedState);
+        super(params);
 
-        console.log(`connecting to server ${serverId}...`);
+        console.log(`connecting to server ${params.serverId}...`);
 
         this.peer = new Peer(peerOptions);
 
@@ -35,10 +38,10 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
             console.log(`local client's peer ID is ${id}`);
 
             const metadata: ConnectionMetadata = {
-                name: clientName,
+                name: params.clientName,
             };
 
-            this.conn = this.peer.connect(serverId, {
+            this.conn = this.peer.connect(params.serverId, {
                 reliable: false,
                 metadata,
             });
@@ -63,7 +66,7 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
                         this.receiveDeltaState(data[1]);
                     }
                     else if (data[0] === errorMessageIdentifier) {
-                        this.receivedError(data[1]);
+                        this.receiveError(data[1]);
                         this.disconnect();
                     }
                     else {

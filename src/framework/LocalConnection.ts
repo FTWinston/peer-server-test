@@ -4,8 +4,15 @@ import { ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier } from './ServerToClientMessage';
 import { Delta } from './Delta';
 import { ClientToServerMessage } from './ClientToServerMessage';
-import { OfflineConnection } from './OfflineConnection';
+import { OfflineConnection, OfflineConnectionParameters } from './OfflineConnection';
 import { isValidName } from './ClientInfo';
+
+export interface LocalConnectionParameters< TServerToClientCommand, TClientState>
+    extends OfflineConnectionParameters<TServerToClientCommand, TClientState>
+{
+    initialState: TClientState;
+    clientName: string;
+}
 
 export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
     extends OfflineConnection<TClientToServerCommand, TServerToClientCommand, TClientState> {
@@ -13,18 +20,13 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
     private readonly clientConnections = new Map<string, Peer.DataConnection>();
 
     constructor(
-        initialState: TClientState,
-        clientName: string,
-        worker: Worker,
-        receiveCommand: (cmd: TServerToClientCommand) => void,
-        receivedState: (oldState: TClientState) => void,
-        receivedError: (message: string) => void,
-        ready: () => void
+        params: LocalConnectionParameters<TServerToClientCommand, TClientState>,
+        ready: () => void,
     ) {
-        super(initialState, worker, receiveCommand, receivedState, receivedError, () => {
-            if (!isValidName(clientName)) {
+        super(params, () => {
+            if (!isValidName(params.clientName)) {
                 console.log('Local player has an invalid name, aborting');
-                worker.terminate();
+                params.worker.terminate();
                 return;
             }
 
@@ -46,7 +48,7 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
                 this.sendMessageToServer({
                     type: ServerWorkerMessageInType.Join,
                     who: this.localId,
-                    name: clientName,
+                    name: params.clientName,
                 });
 
                 ready();

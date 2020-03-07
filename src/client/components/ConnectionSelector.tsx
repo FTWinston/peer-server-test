@@ -24,15 +24,17 @@ export const ConnectionSelector = (props: IProps) => {
     const selectLocal = () => {
         connection = new LocalConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
             {
-                rules: {
-                    active: false
-                }
+                initialState: {
+                    rules: {
+                        active: false
+                    }
+                },
+                clientName,
+                worker: new ServerWorker(),
+                receiveCommand: cmd => props.receiveCommand(cmd),
+                receiveState: state => props.receiveState(state),
+                receiveError: msg => console.error(msg),
             },
-            clientName,
-            new ServerWorker(),
-            cmd => props.receiveCommand(cmd),
-            state => props.receiveState(state),
-            msg => console.error(msg),
             ready
         );
     }
@@ -42,15 +44,17 @@ export const ConnectionSelector = (props: IProps) => {
     const selectRemote = () => {
         connection = new RemoteConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
             {
-                rules: {
-                    active: false
-                }
+                initialState: {
+                    rules: {
+                        active: false
+                    }
+                },
+                serverId,
+                clientName,
+                receiveCommand: cmd => props.receiveCommand(cmd),
+                receiveState: state => props.receiveState(state),
+                receiveError: msg => console.error(msg),
             },
-            serverId,
-            clientName,
-            cmd => props.receiveCommand(cmd),
-            state => props.receiveState(state),
-            msg => console.error(msg),
             ready
         );
     }

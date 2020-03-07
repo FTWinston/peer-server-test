@@ -9,15 +9,26 @@ export interface ConnectionMetadata {
     name: string;
 }
 
+export interface ConnectionParameters<TServerToClientCommand, TClientState> {
+    initialState: TClientState,
+    receiveCommand: (cmd: TServerToClientCommand) => void,
+    receiveState: (state: TClientState) => void,
+    receiveError: (message: string) => void;
+}
+
 export abstract class Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
     constructor(
-        initialState: TClientState,
-        protected readonly receiveCommand: (cmd: TServerToClientCommand) => void,
-        protected readonly receivedState: (state: TClientState) => void,
+        params: ConnectionParameters<TServerToClientCommand, TClientState>
     ) {
-        this._clientState = initialState;
+        this.receiveCommand = params.receiveCommand;
+        this.receiveState = params.receiveState;
+        this.receiveError = params.receiveError;
+        this._clientState = params.initialState;
     }
     
+    protected readonly receiveCommand: (cmd: TServerToClientCommand) => void;
+    protected readonly receiveState: (state: TClientState) => void;
+    protected readonly receiveError: (message: string) => void;
     private _clientState: TClientState;
     
     get clientState(): Readonly<TClientState> {
@@ -27,7 +38,7 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
     protected receiveFullState(newState: TClientState) {
         const prevState = this._clientState;
         this._clientState = newState;
-        this.receivedState(prevState);
+        this.receiveState(prevState);
     }
 
     protected receiveDeltaState(delta: Delta<TClientState>) {
@@ -37,7 +48,7 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
         applyDelta(newState, delta);
         
         this._clientState = newState;
-        this.receivedState(prevState);
+        this.receiveState(prevState);
     }
 
     abstract sendCommand(command: TClientToServerCommand): void;

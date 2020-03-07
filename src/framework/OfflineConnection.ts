@@ -1,26 +1,28 @@
-import { Connection } from './Connection';
+import { Connection, ConnectionParameters } from './Connection';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { Delta } from './Delta';
+
+export interface OfflineConnectionParameters<TServerToClientCommand, TClientState>
+    extends ConnectionParameters<TServerToClientCommand, TClientState>
+{
+    worker: Worker;
+}
 
 export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
     extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
 
     constructor(
-        initialState: TClientState,
-        private readonly worker: Worker,
-        receiveCommand: (cmd: TServerToClientCommand) => void,
-        receivedState: (oldState: TClientState) => void,
-        private readonly receivedError: (message: string) => void,
-        ready: () => void
+        params: OfflineConnectionParameters<TServerToClientCommand, TClientState>,
+        ready: () => void,
     ) {
-        super(initialState, receiveCommand, receivedState);
-        
+        super(params);
+        this.worker = params.worker;
         this.worker.onmessage = e => this.receiveMessageFromServer(e.data);
-
         this.ready = ready;
     }
 
+    private readonly worker: Worker;
     private ready?: () => void;
 
     private receiveMessageFromServer(message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) {
@@ -95,7 +97,7 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
     }
 
     protected dispatchError(message: string) {
-        this.receivedError(message);
+        this.receiveError(message);
     }
 
     disconnect() {
