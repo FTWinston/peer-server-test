@@ -42,8 +42,13 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
         this.lastTickTime = performance.now() - this.tickInterval;
         this.tickTimer = setInterval(() => this.tick(), this.tickInterval);
     }
-
+    
     protected clientJoined(client: ClientInfo): Delta<TServerState> | undefined {
+        // TODO: now send the client a "simulate" command that instructs them to connect again
+        // in a non-reliable way, and wait for that before counting them as fully "connected."
+
+        // Then always use the non-reliable connection for sending state updates.
+
         this.clientData.set(
             client.id,
             new ClientStateManager<TClientState, TServerToClientCommand>(

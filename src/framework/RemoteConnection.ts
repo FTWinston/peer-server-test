@@ -42,15 +42,13 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
             };
 
             this.conn = this.peer.connect(params.serverId, {
-                reliable: false,
+                reliable: true,
                 metadata,
             });
 
             this.conn.on('open', () => {
                 console.log(`connected to server`);
 
-                // this.peer.disconnect(); // TODO: once connected to a server, can disconnect this peer immediately?
-    
                 ready();
 
                 this.conn.on('data', (data: ServerToClientMessage<TServerToClientCommand, TClientState>) => {
