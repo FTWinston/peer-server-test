@@ -62,6 +62,7 @@ export class TestServer extends TickingServer<ServerState, ServerState, ClientTo
                         }
                     }
                 }
+                break;
             }
             case 'right': {
                 console.log(`${client.name} moved right`);
@@ -76,9 +77,11 @@ export class TestServer extends TickingServer<ServerState, ServerState, ClientTo
                         }
                     }
                 }
+                break;
             }
             default: {
                 console.log(`${client.name} issued unhandled command`, command);
+                break;
             }
         }
 
