@@ -32,6 +32,7 @@ export const ConnectionSelector = (props: IProps) => {
             new ServerWorker(),
             cmd => props.receiveCommand(cmd),
             state => props.receiveState(state),
+            msg => console.error(msg),
             ready
         );
     }

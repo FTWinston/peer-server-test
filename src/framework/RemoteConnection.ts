@@ -64,6 +64,7 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
                     }
                     else if (data[0] === errorMessageIdentifier) {
                         this.receivedError(data[1]);
+                        this.disconnect();
                     }
                     else {
                         console.log('Unrecognised message from server', data);

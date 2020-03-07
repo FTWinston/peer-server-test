@@ -105,6 +105,13 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
         });
     }
 
+    protected stop(message: string = 'This server has stopped') {
+        this.sendMessage({
+            type: ServerWorkerMessageOutType.Disconnect,
+            message,
+        });
+    }
+
     protected abstract getFullStateToSendClient(client: ClientInfo, serverState: TServerState): TClientState;
 
     protected abstract getDeltaStateToSendClient(client: ClientInfo, serverDelta: Delta<TServerState>, fullState: TServerState): Delta<TClientState>;

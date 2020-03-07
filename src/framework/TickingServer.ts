@@ -48,5 +48,10 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
         this.updateState(this.simulateTick(tickDuration));
     }
 
+    protected stop(message: string = 'This server has stopped') {
+        this.pause();
+        super.stop(message);
+    }
+
     protected abstract simulateTick(timestep: number): Delta<TServerState> | undefined;
 }

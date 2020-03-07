@@ -5,6 +5,7 @@ export const enum ServerWorkerMessageOutType {
     FullState,
     DeltaState,
     Command,
+    Disconnect,
 }
 
 export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> = {
@@ -23,4 +24,7 @@ export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> = {
     command: TServerToClientCommand;
 } | {
     type: ServerWorkerMessageOutType.Ready;
+}| {
+    type: ServerWorkerMessageOutType.Disconnect;
+    message: string;
 };

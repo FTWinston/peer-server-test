@@ -11,6 +11,7 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
         private readonly worker: Worker,
         receiveCommand: (cmd: TServerToClientCommand) => void,
         receivedState: (oldState: TClientState) => void,
+        private readonly receivedError: (message: string) => void,
         ready: () => void
     ) {
         super(initialState, receiveCommand, receivedState);
@@ -40,6 +41,9 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
                     delete this.ready;
                 }
                 break;
+            case ServerWorkerMessageOutType.Disconnect:
+                this.dispatchError(message.message);
+                this.disconnect();
             default:
                 console.log('received unrecognised message from worker', message);
                 break;
@@ -88,6 +92,10 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
             who: this.localId,
             command,
         })
+    }
+
+    protected dispatchError(message: string) {
+        this.receivedError(message);
     }
 
     disconnect() {

@@ -18,9 +18,10 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
         worker: Worker,
         receiveCommand: (cmd: TServerToClientCommand) => void,
         receivedState: (oldState: TClientState) => void,
+        receivedError: (message: string) => void,
         ready: () => void
     ) {
-        super(initialState, worker, receiveCommand, receivedState, () => {
+        super(initialState, worker, receiveCommand, receivedState, receivedError, () => {
             if (!isValidName(clientName)) {
                 console.log('Local player has an invalid name, aborting');
                 worker.terminate();
@@ -144,6 +145,14 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
         else {
             const conn = this.clientConnections.get(client);
             conn.send([deltaStateMessageIdentifier, state, time]);
+        }
+    }
+
+    protected dispatchError(message: string) {
+        super.dispatchError(message);
+
+        for (const conn of this.clientConnections.values()) {
+            conn.send([errorMessageIdentifier, message]);
         }
     }
 
