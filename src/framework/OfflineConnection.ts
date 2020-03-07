@@ -44,8 +44,7 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
                 }
                 break;
             case ServerWorkerMessageOutType.Disconnect:
-                this.dispatchError(message.message);
-                this.disconnect();
+                this.dispatchError(message.who, message.message);
             default:
                 console.log('received unrecognised message from worker', message);
                 break;
@@ -96,8 +95,9 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
         })
     }
 
-    protected dispatchError(message: string) {
+    protected dispatchError(client: string | undefined, message: string) {
         this.receiveError(message);
+        this.disconnect();
     }
 
     disconnect() {

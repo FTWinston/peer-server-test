@@ -1,11 +1,10 @@
-import { peerOptions, ConnectionMetadata } from './Connection';
+import { peerOptions } from './Connection';
 import Peer from 'peerjs';
 import { ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier } from './ServerToClientMessage';
 import { Delta } from './Delta';
 import { ClientToServerMessage } from './ClientToServerMessage';
 import { OfflineConnection, OfflineConnectionParameters } from './OfflineConnection';
-import { isValidName } from './ClientInfo';
 
 export interface LocalConnectionParameters< TServerToClientCommand, TClientState>
     extends OfflineConnectionParameters<TServerToClientCommand, TClientState>
@@ -24,8 +23,8 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
         ready: () => void,
     ) {
         super(params, () => {
-            if (!isValidName(params.clientName)) {
-                console.log('Local player has an invalid name, aborting');
+            if (params.clientName.length < 1) {
+                console.log('Local player has no name, aborting');
                 params.worker.terminate();
                 return;
             }
@@ -61,16 +60,10 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
     private peerConnected(conn: Peer.DataConnection) {
         const clientName: string | undefined = conn.metadata?.name?.trim();
 
-        if (!clientName || !isValidName(clientName)) {
-            conn.send([errorMessageIdentifier, 'That name is not valid']);
+        if (!clientName || clientName.length < 1) {
+            conn.send([errorMessageIdentifier, 'A name is required']);
             conn.close();
-            console.log(`Rejected connection from a peer with an invalid name: ${clientName}`);
-            return;
-        }
-        else if ([ ...this.clientConnections.values() ].find(c => c.metadata.name.trim() === clientName)) {
-            conn.send([errorMessageIdentifier, 'That name is already in use']);
-            conn.close();
-            console.log(`Rejected connection from a peer with a name that's already in use: ${clientName}`);
+            console.log(`Rejected connection from a peer with no name`);
             return;
         }
 
@@ -150,11 +143,23 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
         }
     }
 
-    protected dispatchError(message: string) {
-        super.dispatchError(message);
-
-        for (const conn of this.clientConnections.values()) {
+    protected dispatchError(client: string | undefined, message: string) {
+        // errors might specify no client, and so should go to everyone
+        if (client === undefined) {
+            for (const conn of this.clientConnections.values()) {
+                conn.send([errorMessageIdentifier, message]);
+                conn.close();
+            }
+            
+            super.dispatchError(client, message);
+        }
+        else if (client === this.peer.id) {
+            super.dispatchError(client, message);
+        }
+        else {
+            const conn = this.clientConnections.get(client);
             conn.send([errorMessageIdentifier, message]);
+            conn.close();
         }
     }
 

@@ -26,5 +26,6 @@ export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> = {
     type: ServerWorkerMessageOutType.Ready;
 }| {
     type: ServerWorkerMessageOutType.Disconnect;
+    who?: string;
     message: string;
 };

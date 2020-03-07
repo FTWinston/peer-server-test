@@ -27,6 +27,18 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
                     id: message.who,
                     name: message.name
                 };
+
+                const joinError = this.getJoinError(info);
+
+                if (joinError !== null) {
+                    this.sendMessage({
+                        type: ServerWorkerMessageOutType.Disconnect,
+                        who: info.id,
+                        message: joinError,
+                    });
+                    break;
+                }
+
                 this.clientData.set(
                     message.who,
                     new ClientData<TClientState, TServerToClientCommand>(
@@ -36,7 +48,7 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
                 );
                 this.updateState(this.clientJoined(info));
                 break;
-                    }
+            }
 
             case ServerWorkerMessageInType.Quit: {
                 const info = this.clientData.get(message.who).info;
@@ -79,6 +91,19 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
         for (const [_, client] of this.clientData) {
             this.sendState(client, stateDelta, time);
         }
+    }
+
+    protected getJoinError(client: ClientInfo): string | null {
+        if (client.name.length > 50) {
+            return 'Your name is too long';
+        }
+
+        const existingClients = [...this.clientData.values()];
+        if (existingClients.find(c => c.info.name.trim() === client.name.trim())) {
+            return 'Your name is already in use';
+        }
+
+        return null;
     }
 
     protected clientJoined(client: ClientInfo): Delta<TServerState> | undefined { return undefined; }
