@@ -4,7 +4,7 @@ import { ClientInfo } from './ClientInfo';
 
 const unacknowledgedDeltaInterval = 1000; // If we go for this may milliseconds with no acknowledgements, we give up on deltas and start sending full states
 
-export class ClientData<TClientState, TServerToClientCommand> {
+export class ClientStateManager<TClientState, TServerToClientCommand> {
     public lastAcknowledgedTime?: number;
 
     private readonly unacknowledgedDeltas = new Map<number, Delta<TClientState>>();
