@@ -1,5 +1,5 @@
 import { ServerWorkerMessageInType } from './ServerWorkerMessageIn';
-import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier } from './ServerToClientMessage';
+import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier, ControlOperation } from './ServerToClientMessage';
 import { Delta } from './Delta';
 import { OfflineConnection, OfflineConnectionParameters } from './OfflineConnection';
 import { ServerPeer } from './ServerPeer';
@@ -83,6 +83,12 @@ export class LocalConnection<TClientToServerCommand, TServerToClientCommand, TCl
         
         if (client === undefined || client === this.peer.id) {
             super.dispatchError(client, message);
+        }
+    }
+
+    protected dispatchControl(client: string | undefined, operation: ControlOperation) {
+        if (client !== this.peer.id) {
+            this.peer.sendToClient(client, [controlMessageIdentifier, operation])
         }
     }
 

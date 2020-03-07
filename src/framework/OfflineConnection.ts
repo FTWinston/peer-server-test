@@ -2,6 +2,7 @@ import { Connection, ConnectionParameters } from './Connection';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { Delta } from './Delta';
+import { ControlOperation } from './ServerToClientMessage';
 
 export interface OfflineConnectionParameters<TServerToClientCommand, TClientState>
     extends ConnectionParameters<TServerToClientCommand, TClientState>
@@ -45,6 +46,10 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
                 break;
             case ServerWorkerMessageOutType.Disconnect:
                 this.dispatchError(message.who, message.message);
+                break;
+            case ServerWorkerMessageOutType.Control:
+                this.dispatchControl(message.who, message.operation);
+                break;
             default:
                 console.log('received unrecognised message from worker', message);
                 break;
@@ -99,6 +104,8 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
         this.receiveError(message);
         this.disconnect();
     }
+
+    protected dispatchControl(client: string | undefined, message: ControlOperation) { }
 
     disconnect() {
         this.worker.terminate();

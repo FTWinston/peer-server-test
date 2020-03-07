@@ -1,7 +1,7 @@
 import { Server } from './Server';
 import { ClientStateManager } from './ClientStateManager';
 import { Delta } from './Delta';
-import { ServerWorkerMessageOut } from './ServerWorkerMessageOut';
+import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ClientInfo } from './ClientInfo';
 
@@ -44,10 +44,13 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
     }
     
     protected clientJoined(client: ClientInfo): Delta<TServerState> | undefined {
-        // TODO: now send the client a "simulate" command that instructs them to connect again
-        // in a non-reliable way, and wait for that before counting them as fully "connected."
-
-        // Then always use the non-reliable connection for sending state updates.
+        // Now that client has established a reliable connection, instruct them
+        // to also connect unreliably, for use with sending state updates every tick.
+        this.sendMessage({
+            type: ServerWorkerMessageOutType.Control,
+            who: client.id,
+            operation: 'simulate',
+        });
 
         this.clientData.set(
             client.id,

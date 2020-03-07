@@ -1,4 +1,5 @@
 import { Delta } from './Delta';
+import { ControlOperation } from './ServerToClientMessage';
 
 export const enum ServerWorkerMessageOutType {
     Ready,
@@ -6,6 +7,7 @@ export const enum ServerWorkerMessageOutType {
     DeltaState,
     Command,
     Disconnect,
+    Control,
 }
 
 export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> = {
@@ -24,8 +26,12 @@ export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> = {
     command: TServerToClientCommand;
 } | {
     type: ServerWorkerMessageOutType.Ready;
-}| {
+} | {
     type: ServerWorkerMessageOutType.Disconnect;
     who?: string;
     message: string;
+} | {
+    type: ServerWorkerMessageOutType.Control;
+    who?: string;
+    operation: ControlOperation;
 };
