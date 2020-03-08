@@ -24,6 +24,7 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
         this.receiveCommand = params.receiveCommand;
         this.receiveState = params.receiveState;
         this.receiveError = params.receiveError;
+        this.playersChanged = params.playersChanged;
         this._clientState = params.initialState;
     }
     
