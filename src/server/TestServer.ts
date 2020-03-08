@@ -2,10 +2,8 @@ import { ClientToServerCommand } from '../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../shared/ServerToClientCommand';
 import { ServerState } from './ServerState';
 import { Player } from '../shared/ClientState';
-import { TickingServer } from '../framework/TickingServer';
-import { Delta } from '../framework/Delta';
+import { ClientInfo, Delta, TickingServer } from '../framework';
 import { ServerWorkerMessageOut } from '../framework/ServerWorkerMessageOut';
-import { ClientInfo } from '../framework/ClientInfo';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 

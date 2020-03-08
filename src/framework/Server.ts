@@ -4,7 +4,9 @@ import { Delta, applyDelta } from './Delta';
 import { ClientInfo } from './ClientInfo';
 
 export abstract class Server<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> {
-    private readonly clients = new Map<string, ClientInfo>();
+    private readonly _clients = new Map<string, ClientInfo>();
+
+    protected get clients(): ReadonlyMap<string, ClientInfo> { return this._clients; }
 
     private _state: TServerState;
 
@@ -40,13 +42,13 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
                     break;
                 }
                 
-                this.clients.set(info.id, info);
+                this._clients.set(info.id, info);
                 this.updateState(this.clientJoined(info));
                 break;
             }
 
             case ServerWorkerMessageInType.Quit: {
-                const client = this.clients.get(message.who);
+                const client = this._clients.get(message.who);
                 if (client) {
                     this.updateState(this.clientQuit(client));
                 }
@@ -54,7 +56,7 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
             }
 
             case ServerWorkerMessageInType.Command: {
-                const client = this.clients.get(message.who);
+                const client = this._clients.get(message.who);
                 if (client) {
                     console.log(`${client.name} issued a command`, message.command);
                     this.updateState(this.receiveCommandFromClient(client, message.command));
@@ -85,7 +87,7 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
             return 'Your name is too long';
         }
 
-        const existingClients = [...this.clients.values()];
+        const existingClients = [...this._clients.values()];
         if (existingClients.find(existing => existing.name.trim() === client.name.trim())) {
             return 'Your name is already in use';
         }
