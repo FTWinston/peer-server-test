@@ -54,7 +54,7 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
             
             this.reliable.on('data', data =>  {
                 if (data[0] === commandMessageIdentifier) {
-                    this.receiveCommand(data[1]);
+                    this.updateState(this.receiveCommand(data[1]));
                 }
                 else if (data[0] === errorMessageIdentifier) {
                     this.receiveError(data[1]);

@@ -68,7 +68,7 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
     }
 
     protected dispatchCommandFromServer(client: string | undefined, command: TServerToClientCommand) {
-        this.receiveCommand(command);
+        this.updateState(this.receiveCommand(command));
     }
 
     protected dispatchFullStateFromServer(client: string, state: TClientState, time: number) {
