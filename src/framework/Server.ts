@@ -43,12 +43,14 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
                 }
                 
                 this._clients.set(info.id, info);
+                this.sendPlayerList();
                 this.updateState(this.clientJoined(info));
                 break;
             }
 
             case ServerWorkerMessageInType.Quit: {
                 const client = this._clients.get(message.who);
+                this.sendPlayerList();
                 if (client) {
                     this.updateState(this.clientQuit(client));
                 }
@@ -93,6 +95,15 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
         }
 
         return null;
+    }
+
+    private sendPlayerList() {
+        const players = [...this.clients.values()].map(c => c.name);
+        
+        this.sendMessage({
+            type: ServerWorkerMessageOutType.Players,
+            players,
+        });
     }
 
     protected clientJoined(client: ClientInfo): Delta<TServerState> | undefined { return undefined; }

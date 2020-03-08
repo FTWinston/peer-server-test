@@ -14,6 +14,7 @@ export interface ConnectionParameters<TServerToClientCommand, TClientState> {
     receiveCommand: (cmd: TServerToClientCommand) => void,
     receiveState: (state: TClientState) => void,
     receiveError: (message: string) => void;
+    playersChanged: (players: string[]) => void;
 }
 
 export abstract class Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
@@ -29,6 +30,7 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
     protected readonly receiveCommand: (cmd: TServerToClientCommand) => void;
     protected readonly receiveState: (state: TClientState) => void;
     protected readonly receiveError: (message: string) => void;
+    private readonly playersChanged: (players: string[]) => void;
     private _clientState: TClientState;
     
     get clientState(): Readonly<TClientState> {
@@ -56,4 +58,15 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
     abstract disconnect(): void;
 
     abstract get localId(): string;
+
+    private _players: string[] = [];
+
+    get playerList(): string[] {
+        return this._players;
+    }
+
+    protected setPlayerList(players: string[]) {
+        this.playersChanged(players);
+        this._players = players;
+    }
 }

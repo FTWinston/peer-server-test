@@ -34,6 +34,7 @@ export const ConnectionSelector = (props: IProps) => {
                 receiveCommand: cmd => props.receiveCommand(cmd),
                 receiveState: state => props.receiveState(state),
                 receiveError: msg => console.error(msg),
+                playersChanged: players => console.log('player list is', players),
             },
             ready
         );
@@ -54,6 +55,7 @@ export const ConnectionSelector = (props: IProps) => {
                 receiveCommand: cmd => props.receiveCommand(cmd),
                 receiveState: state => props.receiveState(state),
                 receiveError: msg => console.error(msg),
+                playersChanged: players => console.log('player list is', players),
             },
             ready
         );

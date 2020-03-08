@@ -50,6 +50,9 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
             case ServerWorkerMessageOutType.Control:
                 this.dispatchControl(message.who, message.operation);
                 break;
+            case ServerWorkerMessageOutType.Players:
+                this.dispatchPlayerList(message.players);
+                break;
             default:
                 console.log('received unrecognised message from worker', message);
                 break;
@@ -106,6 +109,10 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
     }
 
     protected dispatchControl(client: string | undefined, message: ControlOperation) { }
+
+    protected dispatchPlayerList(players: string[]) {
+        this.setPlayerList(players);
+    }
 
     disconnect() {
         this.worker.terminate();

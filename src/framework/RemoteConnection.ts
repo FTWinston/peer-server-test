@@ -1,6 +1,6 @@
 import { Connection, peerOptions, ConnectionMetadata, ConnectionParameters } from './Connection';
 import Peer from 'peerjs';
-import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier } from './ServerToClientMessage';
+import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier, playersMessageIdentifier } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
 
 export interface RemoteConnectionParameters<TServerToClientCommand, TClientState>
@@ -62,6 +62,9 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
                 }
                 else if (data[0] === controlMessageIdentifier) {
                     this.receiveControl(data[1]);
+                }
+                else if (data[0] === playersMessageIdentifier) {
+                    this.setPlayerList(data[1]);
                 }
                 else {
                     console.log('Unrecognised message from server', data);
