@@ -48,7 +48,7 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
         this.updateState(delta);
     }
 
-    protected updateState(delta: Delta<TClientState> | undefined) {
+    public updateState(delta: Delta<TClientState> | undefined) {
         if (!delta) {
             return;
         }
