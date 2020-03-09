@@ -12,7 +12,7 @@ export interface ConnectionMetadata {
 export interface ConnectionParameters<TServerToClientCommand, TClientState> {
     initialState: TClientState,
     receiveCommand: (cmd: TServerToClientCommand) => Delta<TClientState> | void,
-    receiveState?: (state: TClientState) => void,
+    stateChanged?: (state: Readonly<TClientState>, update: Delta<TClientState>) => void;
     receiveError: (message: string) => void;
     playersChanged: (players: string[]) => void;
 }
@@ -22,16 +22,16 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
         params: ConnectionParameters<TServerToClientCommand, TClientState>
     ) {
         this.receiveCommand = params.receiveCommand;
-        this.receiveState = params.receiveState;
         this.receiveError = params.receiveError;
         this.playersChanged = params.playersChanged;
+        this.stateChanged = params.stateChanged;
         this._clientState = params.initialState;
     }
     
     protected readonly receiveCommand: (cmd: TServerToClientCommand) => Delta<TClientState> | void;
-    protected readonly receiveState: (state: TClientState) => void;
     protected readonly receiveError: (message: string) => void;
     private readonly playersChanged: (players: string[]) => void;
+    private readonly stateChanged?: (state: TClientState, update: Delta<TClientState>) => void;
     private _clientState: TClientState;
     
     get clientState(): Readonly<TClientState> {
@@ -41,17 +41,11 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
     protected receiveFullState(newState: TClientState) {
         const prevState = this._clientState;
         this._clientState = newState;
-        this.receiveState(prevState);
+        this.stateChanged(prevState, newState);
     }
 
     protected receiveDeltaState(delta: Delta<TClientState>) {
-        const prevState = this._clientState;
-        
-        const newState = { ...prevState };
-        applyDelta(newState, delta);
-        
-        this._clientState = newState;
-        this.receiveState(prevState);
+        this.updateState(delta);
     }
 
     protected updateState(delta: Delta<TClientState> | undefined) {
@@ -59,9 +53,11 @@ export abstract class Connection<TClientToServerCommand, TServerToClientCommand,
             return;
         }
 
-        const newState = { ...this._clientState };
+        const prevState = this._clientState;
+        const newState = { ...prevState };
         applyDelta(newState, delta);
         this._clientState = newState;
+        this.stateChanged(prevState, delta);
     }
 
     abstract sendCommand(command: TClientToServerCommand): void;
