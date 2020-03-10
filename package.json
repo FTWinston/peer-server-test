@@ -6,7 +6,8 @@
   "types": "lib/index.d.ts",
   "scripts": {
     "start": "webpack-dev-server --open --config config/webpack.dev.js",
-    "build": "tsc"
+    "build": "tsc",
+    "prepare": "npm run build"
   },
   "author": "FTWinston",
   "license": "MIT",
