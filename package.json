@@ -2,8 +2,8 @@
   "name": "peer-server",
   "version": "1.0.0",
   "description": "Library for browser-based multiplayer games, based on peerjs",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
   "scripts": {
     "start": "webpack-dev-server --open --config config/webpack.dev.js",
     "build": "tsc"
@@ -35,6 +35,6 @@
     "url": "git+https://github.com/FTWinston/peer-server.git"
   },
   "files": [
-    "dist/**/*"
+    "lib/**/*"
   ]
 }
