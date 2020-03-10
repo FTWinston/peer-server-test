@@ -6,3 +6,5 @@ export { Connection } from './Connection';
 export { OfflineConnection } from './OfflineConnection';
 export { LocalConnection } from './LocalConnection';
 export { RemoteConnection } from './RemoteConnection';
+export { ServerWorkerMessageIn } from './ServerWorkerMessageIn';
+export { ServerWorkerMessageOut } from './ServerWorkerMessageOut';
