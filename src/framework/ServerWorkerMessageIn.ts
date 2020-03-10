@@ -1,5 +1,5 @@
 export const enum ServerWorkerMessageInType {
-    Join,
+    Join = 1,
     Quit,
     Acknowledge,
     Command,
