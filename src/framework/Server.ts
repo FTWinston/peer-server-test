@@ -114,7 +114,7 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
     protected sendCommand(client: ClientInfo | undefined, command: TServerToClientCommand) {
         this.sendMessage({
             type: ServerWorkerMessageOutType.Command,
-            who: client.id,
+            who: client?.id,
             command,
         });
     }
