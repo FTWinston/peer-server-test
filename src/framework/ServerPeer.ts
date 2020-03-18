@@ -1,9 +1,9 @@
 import { peerOptions } from './Connection';
 import Peer from 'peerjs';
 import { OfflineConnectionParameters } from './OfflineConnection';
-import { errorMessageIdentifier, ServerToClientMessage } from './ServerToClientMessage';
+import { errorMessageIdentifier, ServerToClientMessage, commandMessageIdentifier } from './ServerToClientMessage';
 import { ServerWorkerMessageInType, ServerWorkerMessageIn } from './ServerWorkerMessageIn';
-import { ClientToServerMessage } from './ClientToServerMessage';
+import { ClientToServerMessage, acknowledgeMessageIdentifier, commandMessageIdentifier as clientCommandMessageIdentifier, joinMessageIdentifier } from './ClientToServerMessage';
 
 export interface ServerPeerParameters<TServerToClientCommand, TClientState>
     extends OfflineConnectionParameters<TServerToClientCommand, TClientState>
@@ -53,12 +53,6 @@ export class ServerPeer<TClientToServerCommand, TServerToClientCommand, TClientS
 
         console.log(`Peer connected: ${clientName}`);
 
-        this.clientConnections.set(conn.peer, conn);
-        this.sendToServer({
-            type: ServerWorkerMessageInType.Join,
-            who: conn.peer,
-            name: clientName,
-        });
         conn.on('close', () => {
             this.clientConnections.delete(conn.peer);
             this.sendToServer({
@@ -68,14 +62,26 @@ export class ServerPeer<TClientToServerCommand, TServerToClientCommand, TClientS
         });
         conn.on('data', (data: ClientToServerMessage<TClientToServerCommand>) => {
             console.log(`data received from client ${conn.peer}:`, data);
-            if (data[0] === 'a') {
+            if (data[0] === acknowledgeMessageIdentifier) {
                 this.sendToServer({
                     type: ServerWorkerMessageInType.Acknowledge,
                     who: this.peer.id,
                     time: data[1],
                 });
             }
-            else {
+            else if (data[0] === joinMessageIdentifier) {
+                if (this.clientConnections.has(conn.peer)) {
+                    return;
+                }
+                this.clientConnections.set(conn.peer, conn);
+
+                this.sendToServer({
+                    type: ServerWorkerMessageInType.Join,
+                    who: conn.peer,
+                    name: clientName,
+                });
+            }
+            else if (data[0] === clientCommandMessageIdentifier) {
                 this.sendToServer({
                     type: ServerWorkerMessageInType.Command,
                     who: conn.peer,

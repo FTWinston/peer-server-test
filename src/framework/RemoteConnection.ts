@@ -1,7 +1,7 @@
 import { Connection, peerOptions, ConnectionMetadata, ConnectionParameters } from './Connection';
 import Peer from 'peerjs';
 import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier, playersMessageIdentifier } from './ServerToClientMessage';
-import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
+import { acknowledgeMessageIdentifier, joinMessageIdentifier } from './ClientToServerMessage';
 
 export interface RemoteConnectionParameters<TServerToClientCommand, TClientState>
     extends ConnectionParameters<TServerToClientCommand, TClientState>
@@ -49,6 +49,8 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
 
             this.reliable.on('open', () => {
                 console.log(`connected to server`);
+                this.peer.disconnect(); // Can now disconnect from signalling server.
+                this.reliable.send([joinMessageIdentifier]);
                 ready();
             });
             
