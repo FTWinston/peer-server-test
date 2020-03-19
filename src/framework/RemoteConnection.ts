@@ -128,4 +128,8 @@ export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TC
     get localId() {
         return this.peer.id;
     }
+
+    get remoteId() {
+        return this.reliable.peer;
+    }
 }
