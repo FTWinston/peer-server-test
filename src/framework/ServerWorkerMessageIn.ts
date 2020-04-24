@@ -12,7 +12,6 @@ export type ServerWorkerMessageIn<TClientToServerCommand> = {
 } | {
     type: ServerWorkerMessageInType.Join;
     who: string;
-    name: string;
 } | {
     type: ServerWorkerMessageInType.Acknowledge;
     who: string;

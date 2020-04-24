@@ -1,7 +1,7 @@
-import { Connection, peerOptions, ConnectionMetadata, ConnectionParameters } from './Connection';
-import Peer from 'peerjs';
+import { ServerConnection, ConnectionMetadata, ConnectionParameters } from './ServerConnection';
 import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier, playersMessageIdentifier } from './ServerToClientMessage';
-import { acknowledgeMessageIdentifier, joinMessageIdentifier } from './ClientToServerMessage';
+import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
+import { Instance } from 'simple-peer';
 
 export interface RemoteConnectionParameters<TServerToClientCommand, TClientState>
     extends ConnectionParameters<TServerToClientCommand, TClientState>
@@ -11,11 +11,11 @@ export interface RemoteConnectionParameters<TServerToClientCommand, TClientState
     clientName: string,
 }
 
-export class RemoteConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
-    extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
+export class RemoteServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
+    extends ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState> {
     private reliable?: Peer.DataConnection;
     private unreliable?: Peer.DataConnection;
-    private peer: Peer;
+    private peer: Instance;
     
     constructor(
         params: RemoteConnectionParameters<TServerToClientCommand, TClientState>,

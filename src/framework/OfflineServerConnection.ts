@@ -1,4 +1,4 @@
-import { Connection, ConnectionParameters } from './Connection';
+import { ServerConnection, ConnectionParameters } from './ServerConnection';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { Delta } from './Delta';
@@ -10,8 +10,8 @@ export interface OfflineConnectionParameters<TServerToClientCommand, TClientStat
     worker: Worker;
 }
 
-export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
-    extends Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
+export class OfflineServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
+    extends ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState> {
 
     constructor(
         params: OfflineConnectionParameters<TServerToClientCommand, TClientState>,
@@ -63,7 +63,6 @@ export class OfflineConnection<TClientToServerCommand, TServerToClientCommand, T
         this.sendMessageToServer({
             type: ServerWorkerMessageInType.Join,
             who: this.localId,
-            name: this.localId,
         });
     }
 

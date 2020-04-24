@@ -1,9 +1,4 @@
-import Peer from 'peerjs';
 import { Delta, applyDelta } from './Delta';
-
-export const peerOptions: Peer.PeerJSOption = {
-    // key: 'lwjd5qra8257b9',
-};
 
 export interface ConnectionMetadata {
     name: string;
@@ -17,7 +12,7 @@ export interface ConnectionParameters<TServerToClientCommand, TClientState> {
     playersChanged: (players: string[]) => void;
 }
 
-export abstract class Connection<TClientToServerCommand, TServerToClientCommand, TClientState> {
+export abstract class ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState> {
     constructor(
         params: ConnectionParameters<TServerToClientCommand, TClientState>
     ) {
