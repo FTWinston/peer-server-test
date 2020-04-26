@@ -1,135 +1,107 @@
 import { ServerConnection, ConnectionMetadata, ConnectionParameters } from './ServerConnection';
-import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier, playersMessageIdentifier } from './ServerToClientMessage';
+import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, playersMessageIdentifier } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
-import { Instance } from 'simple-peer';
+import { joinSession, createPeer } from './Signalling';
 
 export interface RemoteConnectionParameters<TServerToClientCommand, TClientState>
     extends ConnectionParameters<TServerToClientCommand, TClientState>
 {
     initialState: TClientState,
-    serverId: string,
+    sessionId: string,
     clientName: string,
 }
 
 export class RemoteServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
     extends ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState> {
-    private reliable?: Peer.DataConnection;
-    private unreliable?: Peer.DataConnection;
-    private peer: Instance;
+    private reliable: RTCDataChannel;
+    private unreliable: RTCDataChannel;
+    private peer: RTCPeerConnection;
+    private clientName: string;
     
     constructor(
         params: RemoteConnectionParameters<TServerToClientCommand, TClientState>,
         ready: () => void,
     ) {
         super(params);
+        this.clientName = params.clientName;
 
-        console.log(`connecting to server ${params.serverId}...`);
+        this.peer = createPeer();
 
-        this.peer = new Peer(peerOptions);
-
-        this.peer.on('error', err => {
-            console.log('remote connection peer error', err);
-        });
-
-        this.peer.on('disconnected', () => {
-            console.log('remote connection peer has been disconnected');
-        });
-
-        this.peer.on('open', id => {
-            console.log(`local client's peer ID is ${id}`);
-
-            const metadata: ConnectionMetadata = {
-                name: params.clientName,
-            };
-
-            this.reliable = this.peer.connect(params.serverId, {
-                reliable: true,
-                metadata,
-            });
-
-            this.reliable.on('open', () => {
-                console.log(`connected to server`);
-                this.peer.disconnect(); // Can now disconnect from signalling server.
-                this.reliable.send([joinMessageIdentifier]);
+        this.peer.ondatachannel = event => {
+            if (event.channel.label === 'reliable') {
                 ready();
-            });
-            
-            this.reliable.on('data', data =>  {
-                if (data[0] === commandMessageIdentifier) {
-                    this.updateState(this.receiveCommand(data[1]));
-                }
-                else if (data[0] === errorMessageIdentifier) {
-                    this.receiveError(data[1]);
-                    this.disconnect();
-                }
-                else if (data[0] === controlMessageIdentifier) {
-                    this.receiveControl(data[1]);
-                }
-                else if (data[0] === playersMessageIdentifier) {
-                    this.setPlayerList(data[1]);
-                }
-                else {
-                    console.log('Unrecognised message from server', data);
-                }
-            });
-        });
-    }
+                this.reliable = event.channel;
 
-    private receiveControl(operation: string) {
-        switch (operation) {
-            case 'simulate':
-                if (this.unreliable) {
-                    break;
-                }
+                this.reliable.onmessage = event => {
+                    const identifier = event.data[0];
 
-                this.unreliable = this.peer.connect(this.reliable.peer, {
-                    reliable: false,
-                    //metadata,
-                });
-                
-                this.unreliable.on('open', () => {
-                    console.log('connected to server state');
-                });
-
-                this.unreliable.on('data', data => {
-                    if (data[0] === fullStateMessageIdentifier) {
-                        this.sendAcknowledgement(data[2]);
-                        this.receiveFullState(data[1]);
+                    if (identifier === commandMessageIdentifier) {
+                        this.updateState(this.receiveCommand(event.data[1]));
                     }
-                    else if (data[0] === deltaStateMessageIdentifier) {
-                        this.sendAcknowledgement(data[2]);
-                        this.receiveDeltaState(data[1]);
+                    else if (identifier === errorMessageIdentifier) {
+                        this.receiveError(event.data[1]);
+                        this.disconnect();
+                    }
+                    else if (identifier === playersMessageIdentifier) {
+                        this.setPlayerList(event.data[1]);
                     }
                     else {
-                        console.log('Unrecognised state from server', data);
+                        console.log('Unrecognised reliable message from server', event.data);
                     }
-                });
-                break;
-            default:
-                console.log(`unexpected control operation: ${operation}`);
-                break;
+                }
+            }
+            else if (event.channel.label === 'unreliable') {
+                this.unreliable = event.channel;
+
+                this.unreliable.onmessage = event => {
+                    const identifier = event.data[0];
+
+                    if (identifier === fullStateMessageIdentifier) {
+                        this.sendAcknowledgement(event.data[2]);
+                        this.receiveFullState(event.data[1]);
+                    }
+                    else if (identifier === deltaStateMessageIdentifier) {
+                        this.sendAcknowledgement(event.data[2]);
+                        this.receiveDeltaState(event.data[1]);
+                    }
+                    else {
+                        console.log('Unrecognised unreliable message from server', event.data);
+                    }
+                }
+            }
+            else {
+                console.log(`Unexpected data channel opened by server: ${event.channel.label}`);
+            }
         }
+
+        console.log(`connecting to server ${params.sessionId}...`);
+
+        joinSession(this.peer, params.sessionId, params.clientName)
+            .then(response => {
+                if (response.success === true) {
+                    // TODO: not ready til we open a data channel ... nothing to do here?
+                }
+                else {
+                    throw new Error(response.error);
+                }
+            });
     }
 
     sendCommand(command: TClientToServerCommand) {
-        this.reliable.send([commandMessageIdentifier, command]);
+        this.reliable.send(JSON.stringify([commandMessageIdentifier, command]));
     }
 
     sendAcknowledgement(time: number) {
-        this.unreliable?.send([acknowledgeMessageIdentifier, time]);
+        this.unreliable?.send(JSON.stringify([acknowledgeMessageIdentifier, time]));
     }
 
     disconnect() {
         this.reliable.close();
         this.unreliable?.close();
-        this.peer.destroy();
+        this.peer.close();
     }
 
     get localId() {
-        return this.peer.id;
-    }
-
-    get remoteId() {
-        return this.reliable.peer;
+        return this.clientName;
     }
 }

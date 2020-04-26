@@ -3,20 +3,19 @@ import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessage
 import { Delta } from './Delta';
 import { OfflineServerConnection as OfflineServerConnection, OfflineConnectionParameters } from './OfflineServerConnection';
 import { ConnectionManager } from './ConnectionManager';
-import { IClient } from './IClient';
+import { IClientConnection } from './IClientConnection';
 
 export interface LocalConnectionParameters<TServerToClientCommand, TClientState>
     extends OfflineConnectionParameters<TServerToClientCommand, TClientState>
 {
-    signalUrl: string;
     clientName: string;
 }
 
 export class LocalServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
     extends OfflineServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
-    implements IClient<TServerToClientCommand, TClientState> {
+    implements IClientConnection<TServerToClientCommand, TClientState> {
     private clients: ConnectionManager<TClientToServerCommand, TServerToClientCommand, TClientState>;
-    readonly name: string;
+    readonly clientName: string;
 
     constructor(
         params: LocalConnectionParameters<TServerToClientCommand, TClientState>,
@@ -30,7 +29,6 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
             }
 
             this.clients = new ConnectionManager(
-                params.signalUrl,
                 message => this.sendMessageToServer(message),
                 sessionID => {
                     // TODO: use the session ID somwhere. Pass it in to the server?
@@ -45,7 +43,7 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
             );
         });
 
-        this.name = params.clientName;
+        this.clientName = params.clientName;
     }
 
     protected onServerReady() {
@@ -56,16 +54,16 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
         // TODO: can we avoid having this AND separate dispatch operations?
 
         if (message[0] === 's') {
-            super.dispatchFullStateFromServer(this.name, message[1], message[2]);
+            super.dispatchFullStateFromServer(this.clientName, message[1], message[2]);
         }
         else if (message[0] === 'd') {
-            super.dispatchDeltaStateFromServer(this.name, message[1], message[2]);
+            super.dispatchDeltaStateFromServer(this.clientName, message[1], message[2]);
         }
         else if (message[0] === 'c') {
-            super.dispatchCommandFromServer(this.name, message[1]);
+            super.dispatchCommandFromServer(this.clientName, message[1]);
         }
         else if (message[0] === 'e') {
-            super.dispatchError(this.name, message[1]);
+            super.dispatchError(this.clientName, message[1]);
         }
         else if (message[0] === 'x') {
             // control operation ... doesn't apply to local client?
@@ -107,6 +105,6 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
     }
 
     get localId() {
-        return this.name;
+        return this.clientName;
     }
 }

@@ -1,16 +1,15 @@
-import SimplePeer, { Instance } from 'simple-peer';
+import { gatherSomeIceCandidates, createPeer, getSignalUrl } from './Signalling';
 
-export class SignalConnection {
+export class ServerSignalConnection {
     private readonly socket: WebSocket;
 
     constructor(
-        url: string,
         private readonly sessionAssigned: (id: string) => void,
         private readonly isNameAllowed: (name: string) => boolean,
-        private readonly join: (name: string, peer: Instance) => void,
+        private readonly join: (name: string, peer: RTCPeerConnection) => void,
         private readonly disconnected: () => void,
     ) {
-        this.socket = new WebSocket(url);
+        this.socket = new WebSocket(`${getSignalUrl()}/host`);
 
         this.socket.onopen = event => {
             // TODO: send signal data ... ? No. Nothing to send initially.
@@ -40,7 +39,7 @@ export class SignalConnection {
                 const name = data[1].trim();
 
                 if (this.isNameAllowed(name)) {
-                    const peer = this.createPeer();
+                    const peer = createPeer();
 
                     const offer = data[2];
                     const answer = await this.signalPeer(peer, offer);
@@ -60,24 +59,23 @@ export class SignalConnection {
         };
     }
 
-    private createPeer() {
-        const peer = new SimplePeer({
-            initiator: false,
-            trickle: false, // ensure a single "signal" event
+    private async signalPeer(peer: RTCPeerConnection, offer: string) {
+        console.log('set remote description');
+        await peer.setRemoteDescription({
+            sdp: offer,
+            type: 'offer'
         });
 
-        return peer;
-    }
+        await gatherSomeIceCandidates(peer);
 
-    private signalPeer(peer: Instance, offer: string) {
-        // Pass the received signal into the peer, and resolve with its response.
-        return new Promise<string>(resolve => {
-            peer.on('signal', answer => {
-                resolve(answer);
-            });
-    
-            peer.signal(offer);
-        });
+        console.log('creating answer');
+        const answer = await peer.createAnswer();
+
+        console.log('set local description');
+        await peer.setLocalDescription(answer); // TODO: won't gather ICE until this is called? ... ach do we care?
+        // Does the server even have to pass its ICE back to the client?
+
+        return answer.sdp;
     }
 
     public get connected() {
