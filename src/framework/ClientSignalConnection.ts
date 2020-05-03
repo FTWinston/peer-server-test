@@ -30,7 +30,7 @@ export class ClientSignalConnection extends SignalConnection {
         }
 
         if (message === 'answer') {
-            this.receiveAnswer(message[1]);
+            this.receiveAnswer(data[1]);
         }
         else if (message === 'ice') {
 

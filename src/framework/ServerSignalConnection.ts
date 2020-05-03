@@ -76,6 +76,6 @@ export class ServerSignalConnection extends SignalConnection {
         await peer.setLocalDescription(answer);
 
         this.join(name, peer);
-        this.send(['accept', answer.sdp]);
+        this.send(['accept', name, answer.sdp]);
     }
 }

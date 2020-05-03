@@ -16,8 +16,6 @@ interface IProps {
     connectionSelected: (conn: TypedConnection) => void;
 }
 
-const clientName = 'TODO enter this';
-
 export const ConnectionSelector = (props: IProps) => {
     let connection: TypedConnection;
     const ready = () => props.connectionSelected(connection);
@@ -30,7 +28,7 @@ export const ConnectionSelector = (props: IProps) => {
                         active: false
                     }
                 },
-                clientName,
+                clientName: localName,
                 signalSettings: defaultSignalSettings,
                 worker: new ServerWorker(),
                 receiveCommand: cmd => props.receiveCommand(cmd),
@@ -44,6 +42,8 @@ export const ConnectionSelector = (props: IProps) => {
     
     const [sessionId, setSessionId] = useState('');
 
+    const [localName, setLocalName] = useState('');
+
     const selectRemote = () => {
         connection = new RemoteServerConnection<ClientToServerCommand, ServerToClientCommand, ClientState>({
             initialState: {
@@ -53,7 +53,7 @@ export const ConnectionSelector = (props: IProps) => {
             },
             sessionId,
             signalSettings: defaultSignalSettings,
-            clientName,
+            clientName: localName,
             receiveCommand: cmd => props.receiveCommand(cmd),
             //receiveState: state => props.receiveState(state),
             receiveError: msg => console.error(msg),
@@ -65,6 +65,15 @@ export const ConnectionSelector = (props: IProps) => {
     return (
     <div>
         <div>
+            <input
+                type="text"
+                placeholder="enter your name"
+                value={localName}
+                onChange={e => setLocalName(e.target.value)}
+            />
+        </div>
+
+        <div style={{marginTop: '2em'}}>
             <button onClick={selectLocal}>Host a local server</button>
         </div>
 

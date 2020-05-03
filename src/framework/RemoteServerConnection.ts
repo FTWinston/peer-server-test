@@ -18,7 +18,7 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
     extends ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState> {
     private reliable: RTCDataChannel;
     private unreliable: RTCDataChannel;
-    private peer: RTCPeerConnection;
+    private peer?: RTCPeerConnection;
     private clientName: string;
     
     constructor(
@@ -38,7 +38,12 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
                 console.log(`connected to server ${params.sessionId}`);
                 this.setupPeer(params.ready);
             },
-            () => {/* disconnect */}
+            () => {
+                 if (!this.reliable) {
+                    // TODO: FLAG THIS UP ... report on the close reason!
+                    console.log('disconnected from signal server')
+                 }
+            }
         );
     }
 

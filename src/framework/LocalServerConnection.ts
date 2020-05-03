@@ -33,7 +33,8 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
             this.clients = new ConnectionManager(
                 message => this.sendMessageToServer(message),
                 sessionID => {
-                    // TODO: use the session ID somwhere. Pass it in to the server?
+                    console.log(`Session ID is ${sessionID}`); // TODO: expose the session ID somewhere!
+                    
                     this.sendMessageToServer({
                         type: ServerWorkerMessageInType.Join,
                         who: params.clientName,
