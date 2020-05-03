@@ -6,7 +6,7 @@ export interface ConnectionMetadata {
 
 export interface ConnectionParameters<TServerToClientCommand, TClientState> {
     initialState: TClientState,
-    receiveCommand: (cmd: TServerToClientCommand) => Delta<TClientState> | undefined,
+    receiveCommand: (cmd: TServerToClientCommand) => Delta<TClientState> | void | undefined,
     stateChanged?: (state: Readonly<TClientState>, update: Delta<TClientState>) => void;
     receiveError: (message: string) => void;
     playersChanged: (players: string[]) => void;
@@ -23,7 +23,7 @@ export abstract class ServerConnection<TClientToServerCommand, TServerToClientCo
         this._clientState = params.initialState;
     }
     
-    protected readonly receiveCommand: (cmd: TServerToClientCommand) => Delta<TClientState> | undefined;
+    protected readonly receiveCommand: (cmd: TServerToClientCommand) => Delta<TClientState> | void | undefined;
     protected readonly receiveError: (message: string) => void;
     private readonly playersChanged: (players: string[]) => void;
     private readonly stateChanged?: (state: TClientState, update: Delta<TClientState>) => void;
@@ -43,7 +43,7 @@ export abstract class ServerConnection<TClientToServerCommand, TServerToClientCo
         this.updateState(delta);
     }
 
-    public updateState(delta: Delta<TClientState> | undefined) {
+    public updateState(delta: Delta<TClientState> | void | undefined) {
         if (!delta) {
             return;
         }

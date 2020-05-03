@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
-import { Connection } from '../../framework/Connection';
-import { RemoteConnection } from '../../framework/RemoteConnection';
+import { ServerConnection } from '../../framework/ServerConnection';
+import { RemoteServerConnection } from '../../framework/RemoteServerConnection';
 import { ClientToServerCommand } from '../../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
 import { ClientState } from '../../shared/ClientState';
 import ServerWorker from '../../server/worker';
-import { LocalConnection } from '../../framework/LocalConnection';
+import { LocalServerConnection } from '../../framework/LocalServerConnection';
+import { defaultSignalSettings } from '../../framework/SignalConnection';
 
-export type TypedConnection = Connection<ClientToServerCommand, ServerToClientCommand, ClientState>;
+export type TypedConnection = ServerConnection<ClientToServerCommand, ServerToClientCommand, ClientState>;
 
 interface IProps {
     receiveCommand: (cmd: ServerToClientCommand) => void;
@@ -22,7 +23,7 @@ export const ConnectionSelector = (props: IProps) => {
     const ready = () => props.connectionSelected(connection);
 
     const selectLocal = () => {
-        connection = new LocalConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
+        connection = new LocalServerConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
             {
                 initialState: {
                     rules: {
@@ -30,9 +31,10 @@ export const ConnectionSelector = (props: IProps) => {
                     }
                 },
                 clientName,
+                signalSettings: defaultSignalSettings,
                 worker: new ServerWorker(),
                 receiveCommand: cmd => props.receiveCommand(cmd),
-                receiveState: state => props.receiveState(state),
+                //receiveState: state => props.receiveState(state),
                 receiveError: msg => console.error(msg),
                 playersChanged: players => console.log('player list is', players),
             },
@@ -40,25 +42,24 @@ export const ConnectionSelector = (props: IProps) => {
         );
     }
     
-    const [serverId, setServerId] = useState('');
+    const [sessionId, setSessionId] = useState('');
 
     const selectRemote = () => {
-        connection = new RemoteConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
-            {
-                initialState: {
-                    rules: {
-                        active: false
-                    }
-                },
-                serverId,
-                clientName,
-                receiveCommand: cmd => props.receiveCommand(cmd),
-                receiveState: state => props.receiveState(state),
-                receiveError: msg => console.error(msg),
-                playersChanged: players => console.log('player list is', players),
+        connection = new RemoteServerConnection<ClientToServerCommand, ServerToClientCommand, ClientState>({
+            initialState: {
+                rules: {
+                    active: false
+                }
             },
-            ready
-        );
+            sessionId,
+            signalSettings: defaultSignalSettings,
+            clientName,
+            receiveCommand: cmd => props.receiveCommand(cmd),
+            //receiveState: state => props.receiveState(state),
+            receiveError: msg => console.error(msg),
+            playersChanged: players => console.log('player list is', players),
+            ready,
+        });
     }
 
     return (
@@ -71,12 +72,12 @@ export const ConnectionSelector = (props: IProps) => {
             <input
                 type="text"
                 placeholder="enter server ID"
-                value={serverId}
-                onChange={e => setServerId(e.target.value)}
+                value={sessionId}
+                onChange={e => setSessionId(e.target.value)}
             />
             <button 
                 onClick={selectRemote}
-                disabled={serverId.length === 0}
+                disabled={sessionId.length === 0}
             >
                 Join a remote server
             </button>

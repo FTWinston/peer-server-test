@@ -4,10 +4,12 @@ import { Delta } from './Delta';
 import { OfflineServerConnection as OfflineServerConnection, OfflineConnectionParameters } from './OfflineServerConnection';
 import { ConnectionManager } from './ConnectionManager';
 import { IClientConnection } from './IClientConnection';
+import { ISignalSettings } from './SignalConnection';
 
 export interface LocalConnectionParameters<TServerToClientCommand, TClientState>
     extends OfflineConnectionParameters<TServerToClientCommand, TClientState>
 {
+    signalSettings: ISignalSettings;
     clientName: string;
 }
 
@@ -39,7 +41,8 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
 
                     ready();
                 },
-                this
+                params.signalSettings,
+                this,
             );
         });
 

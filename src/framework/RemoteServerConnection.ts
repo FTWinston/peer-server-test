@@ -1,7 +1,8 @@
-import { ServerConnection, ConnectionMetadata, ConnectionParameters } from './ServerConnection';
+import { ServerConnection, ConnectionParameters } from './ServerConnection';
 import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, playersMessageIdentifier } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
-import { joinSession, createPeer } from './Signalling';
+import { ISignalSettings } from './SignalConnection';
+import { ClientSignalConnection } from './ClientSignalConnection';
 
 export interface RemoteConnectionParameters<TServerToClientCommand, TClientState>
     extends ConnectionParameters<TServerToClientCommand, TClientState>
@@ -9,6 +10,8 @@ export interface RemoteConnectionParameters<TServerToClientCommand, TClientState
     initialState: TClientState,
     sessionId: string,
     clientName: string,
+    signalSettings: ISignalSettings,
+    ready: () => void,
 }
 
 export class RemoteServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
@@ -19,17 +22,29 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
     private clientName: string;
     
     constructor(
-        params: RemoteConnectionParameters<TServerToClientCommand, TClientState>,
-        ready: () => void,
+        params: RemoteConnectionParameters<TServerToClientCommand, TClientState>
     ) {
         super(params);
         this.clientName = params.clientName;
 
-        this.peer = createPeer();
+        console.log(`connecting to server ${params.sessionId}...`);
 
+        const signal = new ClientSignalConnection(
+            params.signalSettings,
+            params.sessionId,
+            params.clientName,
+            peer => {
+                this.peer = peer;
+                console.log(`connected to server ${params.sessionId}`);
+                this.setupPeer(params.ready);
+            },
+            () => {/* disconnect */}
+        );
+    }
+
+    private setupPeer(ready: () => void) {
         this.peer.ondatachannel = event => {
             if (event.channel.label === 'reliable') {
-                ready();
                 this.reliable = event.channel;
 
                 this.reliable.onmessage = event => {
@@ -49,6 +64,8 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
                         console.log('Unrecognised reliable message from server', event.data);
                     }
                 }
+
+                ready();
             }
             else if (event.channel.label === 'unreliable') {
                 this.unreliable = event.channel;
@@ -73,18 +90,6 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
                 console.log(`Unexpected data channel opened by server: ${event.channel.label}`);
             }
         }
-
-        console.log(`connecting to server ${params.sessionId}...`);
-
-        joinSession(this.peer, params.sessionId, params.clientName)
-            .then(response => {
-                if (response.success === true) {
-                    // TODO: not ready til we open a data channel ... nothing to do here?
-                }
-                else {
-                    throw new Error(response.error);
-                }
-            });
     }
 
     sendCommand(command: TClientToServerCommand) {
