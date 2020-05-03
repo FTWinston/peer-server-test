@@ -69,7 +69,7 @@ export function gatherSomeIceCandidates(peer: RTCPeerConnection) {
 
 export const defaultSignalSettings = {
     signalUrl: process.env.NODE_ENV === 'production'
-        ? 'https://signal.ftwinston.com'
-        : 'http://localhost:63367',
+        ? 'wss://signal.ftwinston.com'
+        : 'ws://localhost:63367',
     iceDelay: 5000,
 }
