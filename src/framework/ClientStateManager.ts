@@ -33,7 +33,7 @@ export class ClientStateManager<TClientState, TServerToClientCommand> {
 
         this.sendMessage({
             type: ServerWorkerMessageOutType.FullState,
-            who: this.info.id,
+            who: this.info.name,
             time,
             state,
         });
@@ -46,7 +46,7 @@ export class ClientStateManager<TClientState, TServerToClientCommand> {
 
         this.sendMessage({
             type: ServerWorkerMessageOutType.DeltaState,
-            who: this.info.id,
+            who: this.info.name,
             time,
             state: cumulativeDelta,
         });

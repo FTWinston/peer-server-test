@@ -27,8 +27,7 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
         switch (message.type) {
             case ServerWorkerMessageInType.Join: {
                 const info = {
-                    id: message.who,
-                    name: message.name
+                    name: message.who
                 };
 
                 const joinError = this.getJoinError(info);
@@ -36,13 +35,13 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
                 if (joinError !== null) {
                     this.sendMessage({
                         type: ServerWorkerMessageOutType.Disconnect,
-                        who: info.id,
+                        who: info.name,
                         message: joinError,
                     });
                     break;
                 }
                 
-                this._clients.set(info.id, info);
+                this._clients.set(info.name, info);
                 this.sendPlayerList();
                 this.updateState(this.clientJoined(info));
                 break;
@@ -114,7 +113,7 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
     protected sendCommand(client: ClientInfo | undefined, command: TServerToClientCommand) {
         this.sendMessage({
             type: ServerWorkerMessageOutType.Command,
-            who: client?.id,
+            who: client?.name,
             command,
         });
     }

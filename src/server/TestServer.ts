@@ -52,7 +52,7 @@ export class TestServer extends TickingServer<ServerState, ServerState, ClientTo
             case 'left': {
                 console.log(`${client.name} moved left`);
 
-                const player = this.playersByClientName.get(client.id);
+                const player = this.playersByClientName.get(client.name);
                 if (player !== undefined) {
                     player.x--;
                     

@@ -48,12 +48,12 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
         // to also connect unreliably, for use with sending state updates every tick.
         this.sendMessage({
             type: ServerWorkerMessageOutType.Control,
-            who: client.id,
+            who: client.name,
             operation: 'simulate',
         });
 
         this.clientData.set(
-            client.id,
+            client.name,
             new ClientStateManager<TClientState, TServerToClientCommand>(
                 client,
                 this.sendMessage
@@ -63,7 +63,7 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
     }
 
     protected clientQuit(client: ClientInfo): Delta<TServerState> | undefined { 
-        this.clientData.delete(client.id);
+        this.clientData.delete(client.name);
         return undefined;
     }
 
