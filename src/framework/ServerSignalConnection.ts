@@ -24,10 +24,10 @@ export class ServerSignalConnection extends SignalConnection {
         }
 
         if (message === 'id') {
-            this.sessionAssigned(message[1]);
+            this.sessionAssigned(data[1]);
         }
         else if (message === 'join') {
-            await this.receiveJoin(message[1].trim(), message[2]);
+            await this.receiveJoin(data[1], data[2]);
         }
         else if (message === 'ice') {
             // TODO: receive ice
@@ -39,7 +39,7 @@ export class ServerSignalConnection extends SignalConnection {
 
     private async receiveJoin(name: string, offer: string) {
         if (!this.isNameAllowed(name)) {
-            this.send(['reject', 'This name is in use or not allowed. Use a different name.']);
+            this.send(['reject', name, 'This name is in use or not allowed. Use a different name.']);
             return;
         }
 
