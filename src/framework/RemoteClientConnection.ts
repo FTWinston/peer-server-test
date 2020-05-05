@@ -56,7 +56,8 @@ export class RemoteClientConnection<TClientToServerCommand, TServerToClientComma
         if (message[0] === controlMessageIdentifier) {
             if (message[1] === 'simulate' && this.unreliable === undefined) {
                 this.unreliable = this.peer.createDataChannel('unreliable', {
-                    ordered: false
+                    ordered: false,
+                    maxRetransmits: 0,
                 });
         
                 this.setupDataChannel(this.unreliable);
@@ -73,8 +74,10 @@ export class RemoteClientConnection<TClientToServerCommand, TServerToClientComma
     }
 
     private shouldSendReliably(messageType: string) {
-        return messageType !== deltaStateMessageIdentifier
-            && messageType !== fullStateMessageIdentifier;
+        return this.unreliable === undefined || (
+            messageType !== deltaStateMessageIdentifier
+            && messageType !== fullStateMessageIdentifier
+        );
     }
 
     disconnect(): void {

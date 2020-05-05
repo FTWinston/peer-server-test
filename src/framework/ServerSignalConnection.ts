@@ -1,6 +1,8 @@
 import { SignalConnection, ISignalSettings } from './SignalConnection';
 
 export class ServerSignalConnection extends SignalConnection {
+    private connectingPeers: Map<string, RTCPeerConnection>;
+
     constructor(
         settings: ISignalSettings,
         private readonly sessionAssigned: (id: string) => void,
@@ -9,6 +11,8 @@ export class ServerSignalConnection extends SignalConnection {
         disconnected: () => void,
     ) {
         super(settings, disconnected);
+
+        this.connectingPeers = new Map<string, RTCPeerConnection>();
     }
 
     protected async socketOpened() {
@@ -30,7 +34,7 @@ export class ServerSignalConnection extends SignalConnection {
             await this.receiveJoin(data[1], data[2]);
         }
         else if (message === 'ice') {
-            // TODO: receive ice
+            await this.receiveIce(data[1], data[2]);
         }
         else {
             throw new Error(`Unexpected data received from signal server, expected id, join or ice, but got ${message}`);
@@ -38,44 +42,70 @@ export class ServerSignalConnection extends SignalConnection {
     }
 
     private async receiveJoin(name: string, offer: string) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`received join from ${name}`);
+        }
+
         if (!this.isNameAllowed(name)) {
             this.send(['reject', name, 'This name is in use or not allowed. Use a different name.']);
             return;
         }
 
         const peer = this.createPeer();
-        
-        console.log('set remote description');
+
+        this.connectingPeers.set(name, peer);
+
+        peer.onconnectionstatechange = () => {
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`peer state changed: ${peer.connectionState}`);
+            }
+            
+            if (peer.connectionState === 'connected') {
+                console.log(`connection established to ${name}`);
+
+                this.connectingPeers.delete(name);
+
+                this.join(name, peer);
+            }
+        };
+
+        this.gatherIce(peer, name);
+
+        if (process.env.NODE_ENV === 'development') {
+            console.log('set remote description');
+        }
+
         await peer.setRemoteDescription({
             sdp: offer,
             type: 'offer'
         });
 
-        // await gatherSomeIceCandidates(peer);
-        let gathering = true;
-        let gotAny = false;
-        peer.onicecandidate = event => {
-            console.log('ice candidate');
-            if (gathering && event.candidate) {
-                this.send(['ice', name, event.candidate.toJSON()]);
-
-                if (!gotAny) {
-                    gotAny = true;
-                    setTimeout(() => {
-                        console.log('finishing with ice candidates');
-                        gathering = false;
-                    }, 5000);
-                }
-            }
-        };
-
-        console.log('creating answer');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('creating answer');
+        }
         const answer = await peer.createAnswer();
 
-        console.log('set local description');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('set local description');
+        }
+        
         await peer.setLocalDescription(answer);
 
-        this.join(name, peer);
         this.send(['accept', name, answer.sdp]);
+    }
+
+    private async receiveIce(name: string, data: string) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`received ice from ${name}`);
+        }
+
+        const peer = this.connectingPeers.get(name);
+
+        if (peer) {
+            await peer.addIceCandidate(JSON.parse(data));
+        }
+        else if (process.env.NODE_ENV === 'development') {
+            console.log(`Received ice that isn't from a connecting client: ${name}`);
+        }
     }
 }

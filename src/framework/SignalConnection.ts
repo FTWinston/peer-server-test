@@ -30,11 +30,35 @@ export abstract class SignalConnection {
     protected abstract receivedMessage(event: MessageEvent): Promise<void>;
 
     protected send(data: Array<string | RTCIceCandidateInit>) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('sending ', data);
+        }
+
         this.socket.send(JSON.stringify(data));
     }
 
     protected createPeer() {
         return new RTCPeerConnection();
+    }
+
+    gatherIce(peer: RTCPeerConnection, remoteName: string) {        
+        peer.onicecandidate = event => {
+            if (!event.candidate) {
+                if (process.env.NODE_ENV === 'development') {
+                    console.log('no more ice candidates');
+                }
+                return;
+            }
+
+            if (process.env.NODE_ENV === 'development') {
+                console.log('got ice candidate');
+            }
+
+            // Don't bother sending ice if already connected.
+            if (this.socket.readyState === WebSocket.OPEN) {
+                this.send(['ice', remoteName, JSON.stringify(event.candidate.toJSON())]);
+            }
+        };
     }
 
     public get connected() {
@@ -44,27 +68,6 @@ export abstract class SignalConnection {
     public disconnect() {
         this.socket.close();
     }
-}
-
-
-
-// Don't wait for all possible candidates, as that might take ages.
-export function gatherSomeIceCandidates(peer: RTCPeerConnection) {
-    return new Promise<void>(resolve => {
-        let hasIce = false;
-        console.log('promise started');
-
-        peer.onicecandidate = event => {
-            console.log('ice candidate');
-            if (!hasIce && event.candidate) {
-                hasIce = true;
-                setTimeout(() => {
-                    console.log('finishing with ice candidates');
-                    resolve();
-                }, 5000);
-            }
-        };
-    });
 }
 
 export const defaultSignalSettings = {

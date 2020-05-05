@@ -85,7 +85,9 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
         const tickDuration = tickStart - this.lastTickTime;
         this.lastTickTime = tickStart;
 
-        console.log(`server is ticking`, Math.round(tickStart));
+        if (process.env.NODE_ENV === 'development') {
+            console.log(`server is ticking`, Math.round(tickStart));
+        }
 
         const stateDelta = this.simulateTick(tickDuration);
         this.updateState(stateDelta);

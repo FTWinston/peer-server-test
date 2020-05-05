@@ -7,17 +7,44 @@ export class ClientSignalConnection extends SignalConnection {
         settings: ISignalSettings,
         private readonly sessionId: string,
         private readonly clientName: string,
-        private readonly join: (peer: RTCPeerConnection) => void,
+        join: (peer: RTCPeerConnection) => void,
         disconnected: () => void,
     ) {
         super(settings, disconnected);
 
         this.peer = this.createPeer();
+        // TESTING: we need a data channel, otherwise it doesn't gather ICE.
+        const controlChannel = this.peer.createDataChannel('control');
+        controlChannel.onopen = () => console.log('control channel opened');
+        controlChannel.onclose =  () => console.log('control channel closed');
+
+        // TODO: adapt this to have the client establish the reliable connection.
+        // Hopefully the server can still establish an unreliable one later if needed...
+
+        this.peer.onconnectionstatechange = () => {
+            if (process.env.NODE_ENV === 'development') {
+                console.log(`peer state changed: ${this.peer.connectionState}`);
+            }
+
+            if (this.peer.connectionState === 'connected') {
+                console.log(`connected to session ${sessionId}`);
+                join(this.peer);
+                this.disconnect();
+            }
+        };
     }
 
     protected async socketOpened() {
+        this.gatherIce(this.peer, '');
+
         const offer = await this.peer.createOffer();
+
+        if (process.env.NODE_ENV === 'development') {
+            console.log('set local description');
+        }
+
         await this.peer.setLocalDescription(offer);
+
         this.send(['join', this.sessionId, this.clientName, offer.sdp]);
     }
 
@@ -30,10 +57,10 @@ export class ClientSignalConnection extends SignalConnection {
         }
 
         if (message === 'answer') {
-            this.receiveAnswer(data[1]);
+            await this.receiveAnswer(data[1]);
         }
         else if (message === 'ice') {
-
+            await this.receiveIce(JSON.parse(data[2]));
         }
         else {
             throw new Error(`Unexpected data received from signal server, expected answer or ice, but got ${message}`);
@@ -41,30 +68,21 @@ export class ClientSignalConnection extends SignalConnection {
     }
 
     private async receiveAnswer(answer: string) {
-        console.log('set remote description');
+        if (process.env.NODE_ENV === 'development') {
+            console.log('set remote description');
+        }
+        
         await this.peer.setRemoteDescription({
             sdp: answer,
             type: 'answer'
         });
+    }
 
-        // await gatherSomeIceCandidates(peer);
-        let gathering = true;
-        let gotAny = false;
-        this.peer.onicecandidate = event => {
-            console.log('ice candidate');
-            if (gathering && event.candidate) {
-                this.send(['ice', '', event.candidate.toJSON()]);
-
-                if (!gotAny) {
-                    gotAny = true;
-                    setTimeout(() => {
-                        console.log('finishing with ice candidates');
-                        gathering = false;
-                    }, 5000);
-                }
-            }
-        };
-
-        this.join(this.peer);
+    private async receiveIce(candidate: RTCIceCandidateInit) {
+        if (process.env.NODE_ENV === 'development') {
+            console.log('receive ice');
+        }
+        
+        await this.peer.addIceCandidate(candidate);
     }
 }
