@@ -15,14 +15,8 @@ export class ClientSignalConnection extends SignalConnection {
         this.peer = this.createPeer();
 
         // we need a data channel, otherwise it doesn't gather ICE.
-        // TODO: instead of a dummy, have the client establish the reliable connection.
-        if (process.env.NODE_ENV === 'development') {
-            console.log('creating dummy data channel');
-        }
-        const controlChannel = this.peer.createDataChannel('control');
-        controlChannel.onopen = () => console.log('control channel opened');
-        controlChannel.onclose =  () => console.log('control channel closed');
-        // TODO: adapt this to have the client establish the reliable connection.
+        const tempChannel = this.peer.createDataChannel('temp');
+        tempChannel.onopen = () => tempChannel.close();
 
         this.peer.onconnectionstatechange = () => {
             if (process.env.NODE_ENV === 'development') {
