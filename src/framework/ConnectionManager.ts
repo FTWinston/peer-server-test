@@ -4,7 +4,7 @@ import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorker
 import { ServerSignalConnection } from './ServerSignalConnection';
 import { IClientConnection } from './IClientConnection';
 import { RemoteClientConnection } from './RemoteClientConnection';
-import { ISignalSettings } from './SignalConnection';
+import { IConnectionSettings } from './SignalConnection';
 
 export interface ServerPeerParameters<TServerToClientCommand, TClientState>
     extends OfflineConnectionParameters<TServerToClientCommand, TClientState>
@@ -20,7 +20,7 @@ export class ConnectionManager<TClientToServerCommand, TServerToClientCommand, T
     constructor(
         private readonly sendToServer: (message: ServerWorkerMessageIn<TClientToServerCommand>) => void,
         ready: (sessionID: string) => void,
-        signalSettings: ISignalSettings,
+        signalSettings: IConnectionSettings,
         localClient?: IClientConnection<TServerToClientCommand, TClientState>,
     ) {
         this.signal = new ServerSignalConnection(

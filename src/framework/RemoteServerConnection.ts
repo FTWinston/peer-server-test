@@ -1,7 +1,7 @@
 import { ServerConnection, ConnectionParameters } from './ServerConnection';
 import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, playersMessageIdentifier } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
-import { ISignalSettings } from './SignalConnection';
+import { IConnectionSettings } from './SignalConnection';
 import { ClientSignalConnection } from './ClientSignalConnection';
 
 export interface RemoteConnectionParameters<TServerToClientCommand, TClientState>
@@ -10,7 +10,7 @@ export interface RemoteConnectionParameters<TServerToClientCommand, TClientState
     initialState: TClientState,
     sessionId: string,
     clientName: string,
-    signalSettings: ISignalSettings,
+    signalSettings: IConnectionSettings,
     ready: () => void,
 }
 

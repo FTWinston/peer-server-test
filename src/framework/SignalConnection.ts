@@ -1,15 +1,43 @@
-export interface ISignalSettings {
+interface RTCIceServer {
+    credential?: string | RTCOAuthCredential;
+    credentialType?: RTCIceCredentialType;
+    urls: string | string[];
+    username?: string;
+}
+
+interface RTCConfiguration {
+    bundlePolicy?: RTCBundlePolicy;
+    certificates?: RTCCertificate[];
+    iceCandidatePoolSize?: number;
+    iceServers?: RTCIceServer[];
+    iceTransportPolicy?: RTCIceTransportPolicy;
+    peerIdentity?: string;
+    rtcpMuxPolicy?: RTCRtcpMuxPolicy;
+}
+
+export interface IConnectionSettings {
     signalUrl: string;
-    iceDelay: number;
+    rtcConfig: RTCConfiguration;
 }
 
 export abstract class SignalConnection {
     private readonly socket: WebSocket;
+    protected readonly settings: IConnectionSettings;
 
     constructor(
-        protected readonly settings: ISignalSettings,
         protected readonly disconnected: () => void,
+        settings: Partial<IConnectionSettings> = {},
     ) {
+        this.settings = {
+            ...defaultSignalSettings,
+            ...settings,
+            rtcConfig: settings.rtcConfig
+                ? {
+                    ...defaultSignalSettings.rtcConfig,
+                    ...settings.rtcConfig,
+                } : defaultSignalSettings.rtcConfig,
+        };
+
         this.socket = new WebSocket(settings.signalUrl);
 
         this.socket.onopen = event => this.socketOpened(event);
@@ -38,7 +66,7 @@ export abstract class SignalConnection {
     }
 
     protected createPeer() {
-        return new RTCPeerConnection();
+        return new RTCPeerConnection(this.settings.rtcConfig);
     }
 
     gatherIce(peer: RTCPeerConnection, remoteName: string) {        
@@ -70,9 +98,16 @@ export abstract class SignalConnection {
     }
 }
 
-export const defaultSignalSettings = {
+export const defaultSignalSettings: IConnectionSettings = {
     signalUrl: process.env.NODE_ENV === 'production'
         ? 'wss://signal.ftwinston.com'
         : 'ws://localhost:63367',
-    iceDelay: 5000,
+    rtcConfig: {
+        iceCandidatePoolSize: 4,
+        iceServers: [
+            {
+                urls: 'stun:stun.l.google.com:19302'
+            }
+        ],
+    },
 }

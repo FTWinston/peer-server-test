@@ -1,16 +1,16 @@
-import { SignalConnection, ISignalSettings } from './SignalConnection';
+import { SignalConnection, IConnectionSettings } from './SignalConnection';
 
 export class ServerSignalConnection extends SignalConnection {
     private connectingPeers: Map<string, RTCPeerConnection>;
 
     constructor(
-        settings: ISignalSettings,
+        settings: IConnectionSettings,
         private readonly sessionAssigned: (id: string) => void,
         private readonly isNameAllowed: (name: string) => boolean,
         private readonly join: (name: string, peer: RTCPeerConnection) => void,
         disconnected: () => void,
     ) {
-        super(settings, disconnected);
+        super(disconnected, settings);
 
         this.connectingPeers = new Map<string, RTCPeerConnection>();
     }
@@ -61,11 +61,8 @@ export class ServerSignalConnection extends SignalConnection {
             }
             
             if (peer.connectionState === 'connected') {
-                console.log(`connection established to ${name}`);
-
-                this.connectingPeers.delete(name);
-
                 this.join(name, peer);
+                this.connectingPeers.delete(name);
             }
         };
 
@@ -91,7 +88,7 @@ export class ServerSignalConnection extends SignalConnection {
         
         await peer.setLocalDescription(answer);
 
-        this.send(['accept', name, answer.sdp]);
+        this.send(['accept', name, peer.localDescription.sdp]);
     }
 
     private async receiveIce(name: string, data: string) {
