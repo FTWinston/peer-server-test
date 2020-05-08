@@ -70,6 +70,8 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
                     }
                 }
 
+                this.reliable.onclose = () => this.disconnect();
+
                 ready();
             }
             else if (event.channel.label === 'unreliable') {
