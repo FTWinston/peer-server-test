@@ -1,7 +1,7 @@
 export { ClientInfo } from './ClientInfo';
 export { Delta } from './Delta';
 export { Server } from './Server';
-export { TickingServer } from './TickingServer';
+export { SimulatingServer } from './SimulatingServer';
 export { ServerConnection } from './ServerConnection';
 export { OfflineServerConnection } from './OfflineServerConnection';
 export { LocalServerConnection } from './LocalServerConnection';

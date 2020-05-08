@@ -2,14 +2,14 @@ import { ClientToServerCommand } from '../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../shared/ServerToClientCommand';
 import { ServerState } from './ServerState';
 import { Player } from '../shared/ClientState';
-import { TickingServer } from '../framework/TickingServer';
+import { SimulatingServer } from '../framework/SimulatingServer';
 import { Delta } from '../framework/Delta';
 import { ServerWorkerMessageOut } from '../framework/ServerWorkerMessageOut';
 import { ClientInfo } from '../framework/ClientInfo';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
-export class TestServer extends TickingServer<ServerState, ServerState, ClientToServerCommand, ServerToClientCommand>
+export class TestServer extends SimulatingServer<ServerState, ServerState, ClientToServerCommand, ServerToClientCommand>
 {
     constructor(
         sendMessage: (message: ServerWorkerMessageOut<ServerToClientCommand, ServerState>) => void

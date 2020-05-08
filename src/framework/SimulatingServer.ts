@@ -5,7 +5,7 @@ import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWork
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ClientInfo } from './ClientInfo';
 
-export abstract class TickingServer<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> 
+export abstract class SimulatingServer<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> 
     extends Server<TServerState, TClientState, TClientToServerCommand, TServerToClientCommand>
 {
     private readonly clientData = new Map<string, ClientStateManager<TClientState, TServerToClientCommand>>();
@@ -84,10 +84,6 @@ export abstract class TickingServer<TServerState extends {}, TClientState extend
         const tickStart = performance.now();
         const tickDuration = tickStart - this.lastTickTime;
         this.lastTickTime = tickStart;
-
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`server is ticking`, Math.round(tickStart));
-        }
 
         const stateDelta = this.simulateTick(tickDuration);
         this.updateState(stateDelta);
