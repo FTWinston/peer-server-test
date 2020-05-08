@@ -3,11 +3,12 @@ import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessage
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
 import { IConnectionSettings } from './SignalConnection';
 import { ClientSignalConnection } from './ClientSignalConnection';
+import { applyDelta } from './Delta';
 
 export interface RemoteConnectionParameters<TServerToClientCommand, TClientState>
     extends ConnectionParameters<TServerToClientCommand, TClientState>
 {
-    initialState: TClientState,
+    initialClientState: TClientState,
     sessionId: string,
     clientName: string,
     signalSettings: IConnectionSettings,
@@ -56,7 +57,11 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
                     const identifier = event.data[0];
 
                     if (identifier === commandMessageIdentifier) {
-                        this.updateState(this.receiveCommand(event.data[1]));
+                        const delta = this.receiveCommand(event.data[1]);
+        
+                        if (delta) {
+                            applyDelta(this.localState, delta);
+                        }
                     }
                     else if (identifier === errorMessageIdentifier) {
                         this.receiveError(event.data[1]);

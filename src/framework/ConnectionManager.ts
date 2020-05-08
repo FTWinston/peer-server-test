@@ -9,7 +9,7 @@ import { IConnectionSettings } from './SignalConnection';
 export interface ServerPeerParameters<TServerToClientCommand, TClientState>
     extends OfflineConnectionParameters<TServerToClientCommand, TClientState>
 {
-    initialState: TClientState;
+    initialClientState: TClientState;
     clientName: string;
 }
 
