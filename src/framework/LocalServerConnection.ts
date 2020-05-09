@@ -1,5 +1,5 @@
 import { ServerWorkerMessageInType } from './ServerWorkerMessageIn';
-import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier, ControlOperation, playersMessageIdentifier, ServerToClientMessage } from './ServerToClientMessage';
+import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier, ControlOperation, ServerToClientMessage } from './ServerToClientMessage';
 import { Delta } from './Delta';
 import { OfflineServerConnection as OfflineServerConnection, OfflineConnectionParameters } from './OfflineServerConnection';
 import { ConnectionManager } from './ConnectionManager';
@@ -13,8 +13,8 @@ export interface LocalConnectionParameters<TServerToClientCommand, TClientState>
     clientName: string;
 }
 
-export class LocalServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
-    extends OfflineServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
+export class LocalServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}>
+    extends OfflineServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState, TLocalState>
     implements IClientConnection<TServerToClientCommand, TClientState> {
     private clients: ConnectionManager<TClientToServerCommand, TServerToClientCommand, TClientState>;
     readonly clientName: string;
@@ -72,9 +72,6 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
         else if (message[0] === 'x') {
             // control operation ... doesn't apply to local client?
         }
-        else if (message[0] === 'p') {
-            super.dispatchPlayerList(message[1]);
-        }
     }
 
     protected dispatchCommandFromServer(client: string | undefined, command: TServerToClientCommand) {
@@ -96,10 +93,6 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
 
     protected dispatchControl(client: string | undefined, operation: ControlOperation) {
         this.clients.sendToClient(client, [controlMessageIdentifier, operation]);
-    }
-
-    protected dispatchPlayerList(players: string[]) {
-        this.clients.sendToClient(undefined, [playersMessageIdentifier, players])
     }
 
     disconnect() {

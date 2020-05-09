@@ -1,12 +1,12 @@
 import { ServerConnection, ConnectionParameters } from './ServerConnection';
-import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, playersMessageIdentifier } from './ServerToClientMessage';
+import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
 import { IConnectionSettings } from './SignalConnection';
 import { ClientSignalConnection } from './ClientSignalConnection';
 import { applyDelta } from './Delta';
 
-export interface RemoteConnectionParameters<TServerToClientCommand, TClientState>
-    extends ConnectionParameters<TServerToClientCommand, TClientState>
+export interface RemoteConnectionParameters<TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}>
+    extends ConnectionParameters<TServerToClientCommand, TClientState, TLocalState>
 {
     initialClientState: TClientState,
     sessionId: string,
@@ -15,15 +15,15 @@ export interface RemoteConnectionParameters<TServerToClientCommand, TClientState
     ready: () => void,
 }
 
-export class RemoteServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
-    extends ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState> {
+export class RemoteServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}>
+    extends ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState, TLocalState> {
     private reliable: RTCDataChannel;
     private unreliable: RTCDataChannel;
     private peer?: RTCPeerConnection;
     private clientName: string;
     
     constructor(
-        params: RemoteConnectionParameters<TServerToClientCommand, TClientState>
+        params: RemoteConnectionParameters<TServerToClientCommand, TClientState, TLocalState>
     ) {
         super(params);
         this.clientName = params.clientName;
@@ -66,9 +66,6 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
                     else if (identifier === errorMessageIdentifier) {
                         this.receiveError(event.data[1]);
                         this.disconnect();
-                    }
-                    else if (identifier === playersMessageIdentifier) {
-                        this.setPlayerList(event.data[1]);
                     }
                     else {
                         console.log('Unrecognised reliable message from server', event.data);

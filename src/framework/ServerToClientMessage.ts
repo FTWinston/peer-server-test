@@ -5,7 +5,6 @@ export const fullStateMessageIdentifier = 's';
 export const deltaStateMessageIdentifier = 'd';
 export const errorMessageIdentifier = 'e';
 export const controlMessageIdentifier = 'x';
-export const playersMessageIdentifier = 'p';
 
 export type ControlOperation = 'simulate';
 
@@ -14,5 +13,4 @@ export type ServerToClientMessage<TServerToClientCommand, TClientState> =
     ['d', Delta<TClientState>, number] |
     ['c', TServerToClientCommand] |
     ['e', string] |
-    ['x', ControlOperation] |
-    ['p', string[]];
+    ['x', ControlOperation];

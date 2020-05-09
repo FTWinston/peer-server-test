@@ -4,17 +4,17 @@ import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWork
 import { Delta, applyDelta } from './Delta';
 import { ControlOperation } from './ServerToClientMessage';
 
-export interface OfflineConnectionParameters<TServerToClientCommand, TClientState>
-    extends ConnectionParameters<TServerToClientCommand, TClientState>
+export interface OfflineConnectionParameters<TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}>
+    extends ConnectionParameters<TServerToClientCommand, TClientState, TLocalState>
 {
     worker: Worker;
 }
 
-export class OfflineServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState>
-    extends ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState> {
+export class OfflineServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}>
+    extends ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState, TLocalState> {
 
     constructor(
-        params: OfflineConnectionParameters<TServerToClientCommand, TClientState>,
+        params: OfflineConnectionParameters<TServerToClientCommand, TClientState, TLocalState>,
         ready: () => void,
     ) {
         super(params);
@@ -49,9 +49,6 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
                 break;
             case ServerWorkerMessageOutType.Control:
                 this.dispatchControl(message.who, message.operation);
-                break;
-            case ServerWorkerMessageOutType.Players:
-                this.dispatchPlayerList(message.players);
                 break;
             default:
                 console.log('received unrecognised message from worker', message);
@@ -112,10 +109,6 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
     }
 
     protected dispatchControl(client: string | undefined, message: ControlOperation) { }
-
-    protected dispatchPlayerList(players: string[]) {
-        this.setPlayerList(players);
-    }
 
     disconnect() {
         this.worker.terminate();
