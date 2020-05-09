@@ -1,4 +1,3 @@
-export { ClientInfo } from './ClientInfo';
 export { Delta } from './Delta';
 export { ServerConnection } from './ServerConnection';
 export { SimulatingServer } from './SimulatingServer';
