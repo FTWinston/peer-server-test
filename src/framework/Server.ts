@@ -1,13 +1,8 @@
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { Delta, applyDelta } from './Delta';
-import { ClientInfo } from './ClientInfo';
 
 export abstract class Server<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> {
-    private readonly _clients = new Map<string, ClientInfo>();
-
-    protected get clients(): ReadonlyMap<string, ClientInfo> { return this._clients; }
-
     private _state: TServerState;
 
     protected get state(): Readonly<TServerState> { return this._state; }
@@ -26,42 +21,42 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
     public receiveMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {
         switch (message.type) {
             case ServerWorkerMessageInType.Join: {
-                const info = {
-                    name: message.who
-                };
-
-                const joinError = this.getJoinError(info);
+                const joinError = this.getJoinError(message.who);
 
                 if (joinError !== null) {
                     this.sendMessage({
                         type: ServerWorkerMessageOutType.Disconnect,
-                        who: info.name,
+                        who: message.who,
                         message: joinError,
                     });
                     break;
                 }
                 
-                this._clients.set(info.name, info);
-                this.sendPlayerList();
-                this.updateState(this.clientJoined(info));
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`${message.who} joined`);
+                }
+
+                this.addClient(message.who);
+                this.updateState(this.clientJoined(message.who));
                 break;
             }
 
             case ServerWorkerMessageInType.Quit: {
-                const client = this._clients.get(message.who);
-                this.sendPlayerList();
-                if (client) {
-                    this.updateState(this.clientQuit(client));
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`${message.who} quit`);
+                }
+
+                if (this.removeClient(message.who)) {
+                    this.updateState(this.clientQuit(message.who));
                 }
                 break;
             }
 
             case ServerWorkerMessageInType.Command: {
-                const client = this._clients.get(message.who);
-                if (client) {
-                    console.log(`${client.name} issued a command`, message.command);
-                    this.updateState(this.receiveCommandFromClient(client, message.command));
+                if (process.env.NODE_ENV === 'development') {
+                    console.log(`${message.who} issued a command`, message.command);
                 }
+                this.updateState(this.receiveCommandFromClient(message.who, message.command));
                 break;
             }
 
@@ -85,67 +80,40 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
         this.stateChanged(newState);
     }
 
-    protected stateChanged(delta: Delta<TServerState>) {
-        this.sendDeltaStateToAll(delta);
-    }
-
-    private sendFullStateToAll(state: TServerState) {    
-        for (const [_, client] of this._clients) {
-            this.sendMessage({
-                type: ServerWorkerMessageOutType.FullState,
-                who: client.name,
-                time: 0,
-                state: this.getFullStateToSendClient(client, state),
-            });
-        }
-    }
-
-    private sendDeltaStateToAll(delta: Delta<TServerState>) {    
-        for (const [_, client] of this._clients) {
-            this.sendMessage({
-                type: ServerWorkerMessageOutType.DeltaState,
-                who: client.name,
-                time: 0,       
-                state: this.getDeltaStateToSendClient(client, delta, this.state),
-            });
-        }
-    }
+    protected abstract stateChanged(delta: Delta<TServerState>): void;
     
-    protected abstract getFullStateToSendClient(client: ClientInfo, serverState: TServerState): TClientState;
+    protected abstract getFullStateToSendClient(client: string, serverState: TServerState): TClientState;
 
-    protected abstract getDeltaStateToSendClient(client: ClientInfo, serverDelta: Delta<TServerState>, fullState: TServerState): Delta<TClientState>;
+    protected abstract getDeltaStateToSendClient(client: string, serverDelta: Delta<TServerState>, fullState: TServerState): Delta<TClientState>;
 
-    protected getJoinError(client: ClientInfo): string | null {
-        if (client.name.length > 50) {
+    protected abstract isNameInUse(name: string): boolean;
+
+    protected getJoinError(clientName: string): string | null {
+        if (clientName.length > 50) {
             return 'Your name is too long';
         }
 
-        const existingClients = [...this._clients.values()];
-        if (existingClients.find(existing => existing.name.trim() === client.name.trim())) {
+        if (this.isNameInUse(clientName)) {
             return 'Your name is already in use';
         }
 
         return null;
     }
 
-    private sendPlayerList() {
-        const players = [...this.clients.values()].map(c => c.name);
-        
-        this.sendMessage({
-            type: ServerWorkerMessageOutType.Players,
-            players,
-        });
-    }
+    protected abstract addClient(name: string): void;
 
-    protected clientJoined(client: ClientInfo): Delta<TServerState> | undefined { return undefined; }
-    protected clientQuit(client: ClientInfo): Delta<TServerState> | undefined { return undefined; }
+    protected abstract removeClient(name: string): boolean;
 
-    protected abstract receiveCommandFromClient(client: ClientInfo, command: TClientToServerCommand): Delta<TServerState> | undefined;
+    protected clientJoined(client: string): Delta<TServerState> | undefined { return undefined; }
 
-    protected sendCommand(client: ClientInfo | undefined, command: TServerToClientCommand) {
+    protected clientQuit(client: string): Delta<TServerState> | undefined { return undefined; }
+
+    protected abstract receiveCommandFromClient(client: string, command: TClientToServerCommand): Delta<TServerState> | undefined;
+
+    protected sendCommand(client: string | undefined, command: TServerToClientCommand) {
         this.sendMessage({
             type: ServerWorkerMessageOutType.Command,
-            who: client?.name,
+            who: client,
             command,
         });
     }

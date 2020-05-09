@@ -3,7 +3,6 @@ import { ClientStateManager } from './ClientStateManager';
 import { Delta, applyDelta } from './Delta';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
-import { ClientInfo } from './ClientInfo';
 
 export abstract class SimulatingServer<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> 
     extends Server<TServerState, TClientState, TClientToServerCommand, TServerToClientCommand>
@@ -43,29 +42,30 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         this.tickTimer = setInterval(() => this.tick(), this.tickInterval);
     }
     
-    protected clientJoined(client: ClientInfo): Delta<TServerState> | undefined {
+    protected isNameInUse(name: string) {
+        return this.clientData.has(name);
+    }
+    
+    protected addClient(client: string) {
         // Now that client has established a reliable connection, instruct them
         // to also connect unreliably, for use with sending state updates every tick.
         this.sendMessage({
             type: ServerWorkerMessageOutType.Control,
-            who: client.name,
+            who: client,
             operation: 'simulate',
         });
 
         this.clientData.set(
-            client.name,
+            client,
             new ClientStateManager<TClientState, TServerToClientCommand>(
                 client,
                 this.sendMessage
             )
         );
-        
-        return undefined;
     }
 
-    protected clientQuit(client: ClientInfo): Delta<TServerState> | undefined { 
-        this.clientData.delete(client.name);
-        return undefined;
+    protected removeClient(client: string) { 
+        return this.clientData.delete(client);
     }
 
     public receiveMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {
@@ -89,20 +89,19 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         applyDelta(this.tickDelta, delta);
     }
     
-    protected sendDeltaStateToAll(delta: Delta<TServerState>) {    
-        const time = performance.now();
+    private sendDeltaStateToAll(delta: Delta<TServerState>, time: number) {
         for (const [_, client] of this.clientData) {
             this.sendState(client, delta, time);
         }
     }
 
-    protected sendState(client: ClientStateManager<TClientState, TServerToClientCommand>, stateDelta: Delta<TServerState>, time: number) {
+    private sendState(client: ClientStateManager<TClientState, TServerToClientCommand>, stateDelta: Delta<TServerState>, time: number) {
         if (client.shouldSendFullState(time)) {
-            const clientState = this.getFullStateToSendClient(client.info, this.state);
+            const clientState = this.getFullStateToSendClient(client.name, this.state);
             client.sendFullState(time, clientState);
         }
         else {
-            const clientDelta = this.getDeltaStateToSendClient(client.info, stateDelta, this.state);
+            const clientDelta = this.getDeltaStateToSendClient(client.name, stateDelta, this.state);
             client.sendDeltaState(time, clientDelta);
         }
     }
@@ -116,7 +115,7 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         this.updateState(simulationDelta);
 
         // Send the accumulation of all state changes this tick, not just the simulationChange.
-        this.sendDeltaStateToAll(this.tickDelta);
+        this.sendDeltaStateToAll(this.tickDelta, tickStart);
         this.tickDelta = {};
     }
 

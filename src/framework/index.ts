@@ -1,8 +1,8 @@
 export { ClientInfo } from './ClientInfo';
 export { Delta } from './Delta';
-export { Server } from './Server';
-export { SimulatingServer } from './SimulatingServer';
 export { ServerConnection } from './ServerConnection';
+export { SimulatingServer } from './SimulatingServer';
+export { StatefulServer } from './StatefulServer';
 export { OfflineServerConnection } from './OfflineServerConnection';
 export { LocalServerConnection } from './LocalServerConnection';
 export { RemoteServerConnection } from './RemoteServerConnection';

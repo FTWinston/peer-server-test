@@ -5,7 +5,6 @@ import { Player } from '../shared/ClientState';
 import { SimulatingServer } from '../framework/SimulatingServer';
 import { Delta } from '../framework/Delta';
 import { ServerWorkerMessageOut } from '../framework/ServerWorkerMessageOut';
-import { ClientInfo } from '../framework/ClientInfo';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
@@ -19,45 +18,45 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
 
     private playersByClientName = new Map<string, Player>();
 
-    protected clientJoined(client: ClientInfo): Delta<ServerState> | undefined {
-        console.log(`${client.name} connected`);
+    protected clientJoined(name: string): Delta<ServerState> | undefined {
+        console.log(`${name} connected`);
 
         const player: Player = {
             type: 'player',
-            name: client.name,
+            name: name,
             x: 0,
             y: 0,
         }
 
-        this.playersByClientName.set(client.name, player);
+        this.playersByClientName.set(name, player);
 
         return {
-            [client.name]: player
+            [name]: player
         };
     }
 
-    protected clientQuit(client: ClientInfo): Delta<ServerState> | undefined {
-        console.log(`${client.name} disconnected`);
+    protected clientQuit(name: string): Delta<ServerState> | undefined {
+        console.log(`${name} disconnected`);
 
-        const playerId = this.playersByClientName.get(client.name);
-        this.playersByClientName.delete(client.name);
+        const playerId = this.playersByClientName.get(name);
+        this.playersByClientName.delete(name);
 
         return {
-            [client.name]: undefined
+            [name]: undefined
         };
     }
 
-    public receiveCommandFromClient(client: ClientInfo, command: ClientToServerCommand): Delta<ServerState> | undefined {
+    public receiveCommandFromClient(name: string, command: ClientToServerCommand): Delta<ServerState> | undefined {
         switch (command) {
             case 'left': {
-                console.log(`${client.name} moved left`);
+                console.log(`${name} moved left`);
 
-                const player = this.playersByClientName.get(client.name);
+                const player = this.playersByClientName.get(name);
                 if (player !== undefined) {
                     player.x--;
                     
                     return {
-                        [client.name]: {
+                        [name]: {
                             x: player.x,
                         }
                     }
@@ -65,14 +64,14 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
                 break;
             }
             case 'right': {
-                console.log(`${client.name} moved right`);
+                console.log(`${name} moved right`);
 
-                const player = this.playersByClientName.get(client.name);
+                const player = this.playersByClientName.get(name);
                 if (player !== undefined) {
                     player.x++;
 
                     return {
-                        [client.name]: {
+                        [name]: {
                             x: player.x,
                         }
                     }
@@ -80,7 +79,7 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
                 break;
             }
             default: {
-                console.log(`${client.name} issued unhandled command`, command);
+                console.log(`${name} issued unhandled command`, command);
                 break;
             }
         }
@@ -93,12 +92,12 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
         return undefined;
     }
 
-    protected getFullStateToSendClient(client: ClientInfo, serverState: ServerState): ServerState {
+    protected getFullStateToSendClient(client: string, serverState: ServerState): ServerState {
         // TODO: some filtering here?
         return serverState;
     }
 
-    protected getDeltaStateToSendClient(client: ClientInfo, serverDelta: Delta<ServerState>): Delta<ServerState> {
+    protected getDeltaStateToSendClient(client: string, serverDelta: Delta<ServerState>): Delta<ServerState> {
         // TODO: some filtering here?
         return serverDelta;
     }

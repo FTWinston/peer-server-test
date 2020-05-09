@@ -8,7 +8,6 @@ export const enum ServerWorkerMessageOutType {
     Command,
     Disconnect,
     Control,
-    Players,
 }
 
 export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> = {
@@ -35,7 +34,4 @@ export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> = {
     type: ServerWorkerMessageOutType.Control;
     who?: string;
     operation: ControlOperation;
-} | {
-    type: ServerWorkerMessageOutType.Players;
-    players: string[];
 };
