@@ -1,15 +1,19 @@
 import { applyDelta, Delta } from '../framework/Delta';
 
-interface SingleProp {
+interface OneProp {
     prop1: string;
 }
 
-interface TwoProps extends SingleProp {
+interface MaybeTwoProps extends OneProp {
     prop2?: string;
 }
 
+interface Parent {
+    child: MaybeTwoProps;
+}
+
 test('delta overwrites empty object', () => {
-    const src: Partial<SingleProp> = {};
+    const src: Partial<OneProp> = {};
 
     applyDelta(src, {
         prop1: 'thingy',
@@ -21,7 +25,7 @@ test('delta overwrites empty object', () => {
 });
 
 test('delta overwrites existing property', () => {
-    const src: SingleProp = {
+    const src: OneProp = {
         prop1: 'old'
     };
 
@@ -35,7 +39,7 @@ test('delta overwrites existing property', () => {
 });
 
 test('delta adds new property', () => {
-    const src: TwoProps = {
+    const src: MaybeTwoProps = {
         prop1: 'existing'
     };
 
@@ -51,7 +55,7 @@ test('delta adds new property', () => {
 });
 
 test('delta removes property', () => {
-    const src: TwoProps = {
+    const src: MaybeTwoProps = {
         prop1: 'existing',
         prop2: 'remove'
     };
@@ -64,4 +68,66 @@ test('delta removes property', () => {
     expect(src).not.toHaveProperty('prop2');
     expect(src.prop1).toEqual('existing');
     expect(Object.keys(src).length).toEqual(1);
+});
+
+test('delta adds property to child', () => {
+    const src: Parent = {
+        child: {
+            prop1: 'one',
+        }
+    };
+
+    applyDelta(src, {
+        child: {
+            prop2: 'two',
+        }
+    });
+
+    expect(src).toHaveProperty('child');
+    expect(src.child).toHaveProperty('prop1');
+    expect(src.child).toHaveProperty('prop2');
+    expect(src.child.prop1).toEqual('one');
+    expect(src.child.prop2).toEqual('two');
+    expect(Object.keys(src).length).toEqual(1);
+    expect(Object.keys(src.child).length).toEqual(2);
+});
+
+test('delta overwrites property on child', () => {
+    const src: Parent = {
+        child: {
+            prop1: 'old',
+        }
+    };
+
+    applyDelta(src, {
+        child: {
+            prop1: 'new',
+        }
+    });
+
+    expect(src).toHaveProperty('child');
+    expect(src.child).toHaveProperty('prop1');
+    expect(src.child.prop1).toEqual('new');
+    expect(Object.keys(src).length).toEqual(1);
+    expect(Object.keys(src.child).length).toEqual(1);
+});
+
+test('delta removes property from child', () => {
+    const src: Parent = {
+        child: {
+            prop1: 'blah',
+            prop2: 'existing',
+        }
+    };
+
+    applyDelta(src, {
+        child: {
+            prop2: undefined,
+        }
+    });
+
+    expect(src).toHaveProperty('child');
+    expect(src.child).not.toHaveProperty('prop2');
+    expect(Object.keys(src).length).toEqual(1);
+    expect(Object.keys(src.child).length).toEqual(1);
 });

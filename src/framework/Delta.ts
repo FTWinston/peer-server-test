@@ -22,10 +22,8 @@ export function applyDelta<TState extends {}>(state: Partial<TState>, delta: Del
                 newVal = val;
             }
             else {
-                newVal = {
-                    ...prevVal,
-                    ...val,
-                };
+                newVal = { ...prevVal };
+                applyDelta(newVal, val);
             }
         }
 
