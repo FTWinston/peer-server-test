@@ -1,6 +1,6 @@
 import { Server } from './Server';
 import { ClientStateManager } from './ClientStateManager';
-import { Delta } from './Delta';
+import { Delta, applyDelta } from './Delta';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ClientInfo } from './ClientInfo';
@@ -59,6 +59,7 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
                 this.sendMessage
             )
         );
+        
         return undefined;
     }
 
@@ -80,32 +81,22 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         }
     }
 
-    private tick() {
-        const tickStart = performance.now();
-        const tickDuration = tickStart - this.lastTickTime;
-        this.lastTickTime = tickStart;
+    private tickDelta: Partial<Delta<TServerState>> = {};
 
-        const stateDelta = this.simulateTick(tickDuration);
-        this.updateState(stateDelta);
-
-        // TODO: the problem here is that even if we get the state delta from this tick simulation,
-        // it won't include any state delta from e.g. client commands that ran since the last tick.
-        // How do we best work around that?
-
-        const time = Math.round(performance.now()); // ms since the page was opened
+    protected stateChanged(delta: Delta<TServerState>) {
+        // Don't send state change immediately.
+        // Instead, add this delta into an accumulating delta for the whole tick.
+        applyDelta(this.tickDelta, delta);
+    }
+    
+    protected sendDeltaStateToAll(delta: Delta<TServerState>) {    
+        const time = performance.now();
         for (const [_, client] of this.clientData) {
-            this.sendState(client, stateDelta, time);
+            this.sendState(client, delta, time);
         }
     }
 
-    protected stop(message: string = 'This server has stopped') {
-        this.pause();
-        super.stop(message);
-    }
-
-    protected abstract simulateTick(timestep: number): Delta<TServerState> | undefined;
-
-    private sendState(client: ClientStateManager<TClientState, TServerToClientCommand>, stateDelta: Delta<TServerState>, time: number) {
+    protected sendState(client: ClientStateManager<TClientState, TServerToClientCommand>, stateDelta: Delta<TServerState>, time: number) {
         if (client.shouldSendFullState(time)) {
             const clientState = this.getFullStateToSendClient(client.info, this.state);
             client.sendFullState(time, clientState);
@@ -116,7 +107,23 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         }
     }
 
-    protected abstract getFullStateToSendClient(client: ClientInfo, serverState: TServerState): TClientState;
+    private tick() {
+        const tickStart = performance.now();
+        const tickDuration = tickStart - this.lastTickTime;
+        this.lastTickTime = tickStart;
 
-    protected abstract getDeltaStateToSendClient(client: ClientInfo, serverDelta: Delta<TServerState>, fullState: TServerState): Delta<TClientState>;
+        const simulationDelta = this.simulateTick(tickDuration);
+        this.updateState(simulationDelta);
+
+        // Send the accumulation of all state changes this tick, not just the simulationChange.
+        this.sendDeltaStateToAll(this.tickDelta);
+        this.tickDelta = {};
+    }
+
+    protected stop(message: string = 'This server has stopped') {
+        this.pause();
+        super.stop(message);
+    }
+
+    protected abstract simulateTick(timestep: number): Delta<TServerState> | undefined;
 }

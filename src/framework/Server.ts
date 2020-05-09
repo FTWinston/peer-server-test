@@ -72,7 +72,7 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
     }
 
     protected updateState(stateDelta?: Delta<TServerState>) {
-        if (stateDelta === undefined) {
+        if (stateDelta === undefined || Object.keys(stateDelta).length === 0) {
             return;
         }
 
@@ -81,7 +81,39 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
         applyDelta(newState, stateDelta);
 
         this._state = newState;
+
+        this.stateChanged(newState);
     }
+
+    protected stateChanged(delta: Delta<TServerState>) {
+        this.sendDeltaStateToAll(delta);
+    }
+
+    private sendFullStateToAll(state: TServerState) {    
+        for (const [_, client] of this._clients) {
+            this.sendMessage({
+                type: ServerWorkerMessageOutType.FullState,
+                who: client.name,
+                time: 0,
+                state: this.getFullStateToSendClient(client, state),
+            });
+        }
+    }
+
+    private sendDeltaStateToAll(delta: Delta<TServerState>) {    
+        for (const [_, client] of this._clients) {
+            this.sendMessage({
+                type: ServerWorkerMessageOutType.DeltaState,
+                who: client.name,
+                time: 0,       
+                state: this.getDeltaStateToSendClient(client, delta, this.state),
+            });
+        }
+    }
+    
+    protected abstract getFullStateToSendClient(client: ClientInfo, serverState: TServerState): TClientState;
+
+    protected abstract getDeltaStateToSendClient(client: ClientInfo, serverDelta: Delta<TServerState>, fullState: TServerState): Delta<TClientState>;
 
     protected getJoinError(client: ClientInfo): string | null {
         if (client.name.length > 50) {
