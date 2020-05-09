@@ -2,9 +2,9 @@ import { ClientToServerCommand } from '../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../shared/ServerToClientCommand';
 import { ServerState } from './ServerState';
 import { Player } from '../shared/ClientState';
-import { SimulatingServer } from '../framework/SimulatingServer';
-import { Delta } from '../framework/Delta';
-import { ServerWorkerMessageOut } from '../framework/ServerWorkerMessageOut';
+import { SimulatingServer } from '../../framework/SimulatingServer';
+import { Delta } from '../../framework/Delta';
+import { ServerWorkerMessageOut } from '../../framework/ServerWorkerMessageOut';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 

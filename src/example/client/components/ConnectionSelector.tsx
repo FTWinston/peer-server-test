@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { ServerConnection } from '../../framework/ServerConnection';
-import { RemoteServerConnection } from '../../framework/RemoteServerConnection';
+import { ServerConnection } from '../../../framework/ServerConnection';
+import { RemoteServerConnection } from '../../../framework/RemoteServerConnection';
 import { ClientToServerCommand } from '../../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
 import { ClientState } from '../../shared/ClientState';
 import ServerWorker from '../../server/worker';
-import { LocalServerConnection } from '../../framework/LocalServerConnection';
-import { defaultSignalSettings } from '../../framework/SignalConnection';
+import { LocalServerConnection } from '../../../framework/LocalServerConnection';
+import { defaultSignalSettings } from '../../../framework/SignalConnection';
 
 export type TypedConnection = ServerConnection<ClientToServerCommand, ServerToClientCommand, ClientState>;
 
@@ -23,7 +23,7 @@ export const ConnectionSelector = (props: IProps) => {
     const selectLocal = () => {
         connection = new LocalServerConnection<ClientToServerCommand, ServerToClientCommand, ClientState>(
             {
-                initialState: {
+                initialClientState: {
                     rules: {
                         active: false
                     }
@@ -34,7 +34,6 @@ export const ConnectionSelector = (props: IProps) => {
                 receiveCommand: cmd => props.receiveCommand(cmd),
                 //receiveState: state => props.receiveState(state),
                 receiveError: msg => console.error(msg),
-                playersChanged: players => console.log('player list is', players),
             },
             ready
         );
@@ -46,7 +45,7 @@ export const ConnectionSelector = (props: IProps) => {
 
     const selectRemote = () => {
         connection = new RemoteServerConnection<ClientToServerCommand, ServerToClientCommand, ClientState>({
-            initialState: {
+            initialClientState: {
                 rules: {
                     active: false
                 }
@@ -57,7 +56,6 @@ export const ConnectionSelector = (props: IProps) => {
             receiveCommand: cmd => props.receiveCommand(cmd),
             //receiveState: state => props.receiveState(state),
             receiveError: msg => console.error(msg),
-            playersChanged: players => console.log('player list is', players),
             ready,
         });
     }
