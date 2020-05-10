@@ -14,6 +14,8 @@ export abstract class StatefulServer<TServerState extends {}, TClientState exten
         super(initialState, sendMessage);
     }
 
+    public get numClients() { return this._clients.size; }
+
     protected isNameInUse(name: string) {
         return this._clients.has(name);
     }

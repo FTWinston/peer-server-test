@@ -5,7 +5,9 @@ import { Delta, applyDelta } from './Delta';
 export abstract class Server<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> {
     private _state: TServerState;
 
-    protected get state(): Readonly<TServerState> { return this._state; }
+    public get state(): Readonly<TServerState> { return this._state; }
+
+    public abstract numClients: number;
 
     constructor(
         initialState: TServerState,

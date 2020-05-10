@@ -21,6 +21,8 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         this.resume();
     }
 
+    public get numClients() { return this.clientData.size }
+
     // TODO: status? e.g. not started, active, paused, finished
     public get isRunning() { return this.tickInterval !== undefined; }
 
