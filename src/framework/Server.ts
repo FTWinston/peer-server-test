@@ -7,8 +7,6 @@ export abstract class Server<TServerState extends {}, TClientState extends {}, T
 
     public get state(): Readonly<TServerState> { return this._state; }
 
-    public abstract numClients: number;
-
     constructor(
         initialState: TServerState,
         protected readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void

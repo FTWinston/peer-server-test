@@ -7,7 +7,7 @@ import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorker
 export abstract class SimulatingServer<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> 
     extends Server<TServerState, TClientState, TClientToServerCommand, TServerToClientCommand>
 {
-    private readonly clientData = new Map<string, ClientStateManager<TClientState, TServerToClientCommand>>();
+    private readonly _clients = new Map<string, ClientStateManager<TClientState, TServerToClientCommand>>();
 
     private tickTimer: NodeJS.Timeout | undefined;
     private lastTickTime: number;
@@ -21,7 +21,7 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         this.resume();
     }
 
-    public get numClients() { return this.clientData.size }
+    public get clients(): ReadonlyMap<string, {}> { return this._clients; }
 
     // TODO: status? e.g. not started, active, paused, finished
     public get isRunning() { return this.tickInterval !== undefined; }
@@ -45,7 +45,7 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
     }
     
     protected isNameInUse(name: string) {
-        return this.clientData.has(name);
+        return this._clients.has(name);
     }
     
     protected addClient(client: string) {
@@ -57,7 +57,7 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
             operation: 'simulate',
         });
 
-        this.clientData.set(
+        this._clients.set(
             client,
             new ClientStateManager<TClientState, TServerToClientCommand>(
                 client,
@@ -67,13 +67,13 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
     }
 
     protected removeClient(client: string) { 
-        return this.clientData.delete(client);
+        return this._clients.delete(client);
     }
 
     public receiveMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {
         switch (message.type) {
             case ServerWorkerMessageInType.Acknowledge:
-                const client = this.clientData.get(message.who);
+                const client = this._clients.get(message.who);
                 client?.acknowledge(message.time);
                 break;
 
@@ -92,7 +92,7 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
     }
     
     private sendDeltaStateToAll(delta: Delta<TServerState>, time: number) {
-        for (const [_, client] of this.clientData) {
+        for (const [_, client] of this._clients) {
             this.sendState(client, delta, time);
         }
     }
