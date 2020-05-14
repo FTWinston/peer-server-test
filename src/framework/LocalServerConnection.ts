@@ -1,13 +1,13 @@
 import { ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier, ControlOperation, ServerToClientMessage } from './ServerToClientMessage';
-import { Delta } from './Delta';
 import { OfflineServerConnection as OfflineServerConnection, OfflineConnectionParameters } from './OfflineServerConnection';
 import { ConnectionManager } from './ConnectionManager';
 import { IClientConnection } from './IClientConnection';
 import { IConnectionSettings } from './SignalConnection';
+import { Patch } from 'immer';
 
-export interface LocalConnectionParameters<TServerToClientCommand, TClientState>
-    extends OfflineConnectionParameters<TServerToClientCommand, TClientState>
+export interface LocalConnectionParameters<TServerToClientCommand, TClientState extends {}, TLocalState extends {}>
+    extends OfflineConnectionParameters<TServerToClientCommand, TClientState, TLocalState>
 {
     signalSettings: IConnectionSettings;
     clientName: string;
@@ -20,7 +20,7 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
     readonly clientName: string;
 
     constructor(
-        params: LocalConnectionParameters<TServerToClientCommand, TClientState>,
+        params: LocalConnectionParameters<TServerToClientCommand, TClientState, TLocalState>,
         ready: () => void,
     ) {
         super(params, () => {
@@ -82,7 +82,7 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
         this.clients.sendToClient(client, [fullStateMessageIdentifier, state, time])
     }
 
-    protected dispatchDeltaStateFromServer(client: string, state: Delta<TClientState>, time: number) {
+    protected dispatchDeltaStateFromServer(client: string, state: Patch[], time: number) {
         this.clients.sendToClient(client, [deltaStateMessageIdentifier, state, time])
     }
 

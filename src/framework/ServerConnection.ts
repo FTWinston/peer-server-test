@@ -1,4 +1,6 @@
-import { Delta, applyDelta } from './Delta';
+import { enablePatches, applyPatches, Patch } from 'immer';
+
+enablePatches();
 
 export interface ConnectionMetadata {
     name: string;
@@ -6,9 +8,9 @@ export interface ConnectionMetadata {
 
 export interface ConnectionParameters<TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}> {
     initialClientState: TClientState,
-    initialLocalState?: TClientState,
-    receiveCommand: (cmd: TServerToClientCommand) => Delta<TLocalState> | void | undefined,
-    clientStateChanged?: (state: Readonly<TClientState>, update: Delta<TClientState>) => void;
+    initialLocalState?: TLocalState,
+    receiveCommand: (cmd: TServerToClientCommand) => void,
+    clientStateChanged?: (prevState: Readonly<TClientState>, newState: Readonly<TClientState>) => void;
     receiveError: (message: string) => void;
 }
 
@@ -22,9 +24,9 @@ export abstract class ServerConnection<TClientToServerCommand, TServerToClientCo
         this._clientState = params.initialClientState;
     }
     
-    protected readonly receiveCommand: (cmd: TServerToClientCommand) => Delta<TLocalState> | void | undefined;
+    protected readonly receiveCommand: (cmd: TServerToClientCommand) => void;
     protected readonly receiveError: (message: string) => void;
-    private readonly clientStateChanged?: (state: TClientState, update: Delta<TClientState>) => void;
+    private readonly clientStateChanged?: (prevState: TClientState, newState: TClientState) => void;
     private _clientState: TClientState;
     
     get clientState(): Readonly<TClientState> {
@@ -36,19 +38,23 @@ export abstract class ServerConnection<TClientToServerCommand, TServerToClientCo
     protected receiveFullState(newState: TClientState) {
         const prevState = this._clientState;
         this._clientState = newState;
-        this.clientStateChanged(prevState, newState);
+        if (prevState !== newState && this.clientStateChanged) {
+            this.clientStateChanged(prevState, newState);
+        }
     }
 
-    protected receiveDeltaState(delta: Delta<TClientState>) {
+    protected receiveDeltaState(delta: Patch[]) {
         if (!delta) {
             return;
         }
 
         const prevState = this._clientState;
-        const newState = { ...prevState };
-        applyDelta(newState, delta);
-        this._clientState = newState;
-        this.clientStateChanged(prevState, delta);
+        const newState = applyPatches(prevState, delta);
+
+        if (newState !== prevState && this.clientStateChanged) {
+            this._clientState = newState;
+            this.clientStateChanged(prevState, newState);
+        }
     }
 
     abstract sendCommand(command: TClientToServerCommand): void;

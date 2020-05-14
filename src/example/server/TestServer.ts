@@ -1,10 +1,10 @@
 import { ClientToServerCommand } from '../shared/ClientToServerCommand';
 import { ServerToClientCommand } from '../shared/ServerToClientCommand';
 import { ServerState } from './ServerState';
-import { Player } from '../shared/ClientState';
+import { Player, ClientState } from '../shared/ClientState';
 import { SimulatingServer } from '../../framework/SimulatingServer';
-import { Delta } from '../../framework/Delta';
 import { ServerWorkerMessageOut } from '../../framework/ServerWorkerMessageOut';
+import { Draft } from 'immer';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
@@ -13,69 +13,63 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
     constructor(
         sendMessage: (message: ServerWorkerMessageOut<ServerToClientCommand, ServerState>) => void
     ) {
-        super({}, sendMessage, tickInterval);
+        super({
+            rules: {
+                active: true,
+            },
+            players: {},
+        }, sendMessage, tickInterval);
     }
 
-    private playersByClientName = new Map<string, Player>();
-
-    protected clientJoined(name: string): Delta<ServerState> | undefined {
+    protected clientJoined(name: string) {
         console.log(`${name} connected`);
 
         const player: Player = {
-            type: 'player',
-            name: name,
             x: 0,
             y: 0,
         }
 
-        this.playersByClientName.set(name, player);
-
-        return {
-            [name]: player
-        };
+        this.updateState(state => {
+            state.players = {
+                ...state.players,
+                [name]: player,
+            };
+        });
     }
 
-    protected clientQuit(name: string): Delta<ServerState> | undefined {
+    protected clientQuit(name: string) {
         console.log(`${name} disconnected`);
 
-        const playerId = this.playersByClientName.get(name);
-        this.playersByClientName.delete(name);
-
-        return {
-            [name]: undefined
-        };
+        this.updateState(state => {
+            state.players = {
+                ...state.players,
+            };
+            delete state.players[name];
+        });
     }
 
-    public receiveCommandFromClient(name: string, command: ClientToServerCommand): Delta<ServerState> | undefined {
+    public receiveCommandFromClient(name: string, command: ClientToServerCommand): void {
         switch (command) {
             case 'left': {
                 console.log(`${name} moved left`);
 
-                const player = this.playersByClientName.get(name);
-                if (player !== undefined) {
-                    player.x--;
-                    
-                    return {
-                        [name]: {
-                            x: player.x,
-                        }
+                this.updateState(state => {
+                    const player = state.players[name];
+                    if (player !== undefined) {
+                        player.x--;
                     }
-                }
+                });
                 break;
             }
             case 'right': {
                 console.log(`${name} moved right`);
 
-                const player = this.playersByClientName.get(name);
-                if (player !== undefined) {
-                    player.x++;
-
-                    return {
-                        [name]: {
-                            x: player.x,
-                        }
+                this.updateState(state => {
+                    const player = state.players[name];
+                    if (player !== undefined) {
+                        player.x++;
                     }
-                }
+                });
                 break;
             }
             default: {
@@ -83,22 +77,20 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
                 break;
             }
         }
-
-        return undefined;
     }
 
-    protected simulateTick(timestep: number): Delta<ServerState> | undefined {
+    protected simulateTick(timestep: number): void {
         // TODO: simulate stuff
-        return undefined;
     }
 
-    protected getFullStateToSendClient(client: string, serverState: ServerState): ServerState {
-        // TODO: some filtering here?
-        return serverState;
-    }
+    protected updateClientState(client: string, clientState: Partial<Draft<ClientState>>, prevServerState: ServerState | null, serverState: ServerState) {
+        if (prevServerState?.rules !== serverState.rules) {
+            clientState.rules = serverState.rules;
+        }
 
-    protected getDeltaStateToSendClient(client: string, serverDelta: Delta<ServerState>): Delta<ServerState> {
-        // TODO: some filtering here?
-        return serverDelta;
+        // TODO: only send the player(s) that changed
+        if (prevServerState?.players !== serverState.players) {
+            clientState.players = serverState.players;
+        }
     }
 }

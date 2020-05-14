@@ -3,12 +3,11 @@ export interface GameRules {
 }
 
 export interface Player {
-    type: 'player',
-    name: string,
     x: number,
     y: number,
 }
 
 export type ClientState = {
     rules: GameRules;
-} | Record<string, Player>
+    players: Record<string, Player>;
+}

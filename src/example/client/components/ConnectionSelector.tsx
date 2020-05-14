@@ -26,7 +26,8 @@ export const ConnectionSelector = (props: IProps) => {
                 initialClientState: {
                     rules: {
                         active: false
-                    }
+                    },
+                    players: {}
                 },
                 clientName: localName,
                 signalSettings: defaultSignalSettings,
@@ -48,7 +49,8 @@ export const ConnectionSelector = (props: IProps) => {
             initialClientState: {
                 rules: {
                     active: false
-                }
+                },
+                players: {}
             },
             sessionId,
             signalSettings: defaultSignalSettings,

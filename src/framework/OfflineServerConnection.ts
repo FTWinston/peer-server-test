@@ -1,8 +1,8 @@
 import { ServerConnection, ConnectionParameters } from './ServerConnection';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
-import { Delta, applyDelta } from './Delta';
 import { ControlOperation } from './ServerToClientMessage';
+import { Patch } from 'immer';
 
 export interface OfflineConnectionParameters<TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}>
     extends ConnectionParameters<TServerToClientCommand, TClientState, TLocalState>
@@ -64,11 +64,7 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
     }
 
     protected dispatchCommandFromServer(client: string | undefined, command: TServerToClientCommand) {
-        const delta = this.receiveCommand(command);
-        
-        if (delta) {
-            applyDelta(this.localState, delta);
-        }
+        this.receiveCommand(command);
     }
 
     protected dispatchFullStateFromServer(client: string, state: TClientState, time: number) {
@@ -81,7 +77,7 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
         this.receiveFullState(state);
     }
 
-    protected dispatchDeltaStateFromServer(client: string, state: Delta<TClientState>, time: number) {
+    protected dispatchDeltaStateFromServer(client: string, state: Patch[], time: number) {
         this.sendMessageToServer({
             type: ServerWorkerMessageInType.Acknowledge,
             who: this.localId,

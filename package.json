@@ -32,7 +32,9 @@
     "webpack-merge": "^4.2.2",
     "worker-loader": "^2.0.0"
   },
-  "dependencies": {},
+  "dependencies": {
+    "immer": "^6.0.5"
+  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/FTWinston/peer-server.git"

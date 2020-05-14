@@ -1,5 +1,5 @@
-import { Delta } from './Delta';
 import { ControlOperation } from './ServerToClientMessage';
+import { Patch } from 'immer';
 
 export const enum ServerWorkerMessageOutType {
     Ready,
@@ -19,7 +19,7 @@ export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> = {
     type: ServerWorkerMessageOutType.DeltaState;
     who: string;
     time: number;
-    state: Delta<TClientState>;
+    state: Patch[];
 } | {
     type: ServerWorkerMessageOutType.Command;
     who?: string;

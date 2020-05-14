@@ -1,4 +1,3 @@
-export { Delta } from './Delta';
 export { ServerConnection } from './ServerConnection';
 export { SimulatingServer } from './SimulatingServer';
 export { StatefulServer } from './StatefulServer';

@@ -1,13 +1,16 @@
 import { Server } from './Server';
-import { ClientStateManager } from './ClientStateManager';
-import { Delta, applyDelta } from './Delta';
 import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
 import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
+import { Draft, createDraft, finishDraft } from 'immer';
+import { UnreliableClientStateManager } from './UnreliableClientStateManager';
 
 export abstract class SimulatingServer<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> 
     extends Server<TServerState, TClientState, TClientToServerCommand, TServerToClientCommand>
 {
-    private readonly _clients = new Map<string, ClientStateManager<TClientState, TServerToClientCommand>>();
+    private readonly _clients = new Map<string, UnreliableClientStateManager<TServerState, TClientState, TServerToClientCommand>>();
+
+    private underlyingState: TServerState;
+    private workingState: Draft<TServerState>;
 
     private tickTimer: NodeJS.Timeout | undefined;
     private lastTickTime: number;
@@ -17,14 +20,24 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void,
         private readonly tickInterval: number
     ) {
-        super(initialState, sendMessage);
+        super(sendMessage);
+
+        this.underlyingState = initialState;
+        this.workingState = createDraft(initialState);
+
         this.resume();
     }
 
-    public get clients(): ReadonlyMap<string, {}> { return this._clients; }
+    public get clients() { return this._clients.keys(); }
+
+    protected get state(): Readonly<TServerState> { return this.workingState as TServerState; }
 
     // TODO: status? e.g. not started, active, paused, finished
     public get isRunning() { return this.tickInterval !== undefined; }
+
+    protected updateState(update: (state: Draft<TServerState>) => void) {
+        update(this.workingState);
+    }
 
     public pause() {
         if (this.tickTimer === undefined) {
@@ -59,9 +72,10 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
 
         this._clients.set(
             client,
-            new ClientStateManager<TClientState, TServerToClientCommand>(
+            new UnreliableClientStateManager<TServerState, TClientState, TServerToClientCommand>(
                 client,
-                this.sendMessage
+                this.sendMessage,
+                this.updateClientState,
             )
         );
     }
@@ -83,42 +97,22 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         }
     }
 
-    private tickDelta: Partial<Delta<TServerState>> = {};
-
-    protected stateChanged(delta: Delta<TServerState>) {
-        // Don't send state change immediately.
-        // Instead, add this delta into an accumulating delta for the whole tick.
-        applyDelta(this.tickDelta, delta);
-    }
-    
-    private sendDeltaStateToAll(delta: Delta<TServerState>, time: number) {
-        for (const [_, client] of this._clients) {
-            this.sendState(client, delta, time);
-        }
-    }
-
-    private sendState(client: ClientStateManager<TClientState, TServerToClientCommand>, stateDelta: Delta<TServerState>, time: number) {
-        if (client.shouldSendFullState(time)) {
-            const clientState = this.getFullStateToSendClient(client.name, this.state);
-            client.sendFullState(time, clientState);
-        }
-        else {
-            const clientDelta = this.getDeltaStateToSendClient(client.name, stateDelta, this.state);
-            client.sendDeltaState(time, clientDelta);
-        }
-    }
-
     private tick() {
         const tickStart = performance.now();
         const tickDuration = tickStart - this.lastTickTime;
         this.lastTickTime = tickStart;
 
-        const simulationDelta = this.simulateTick(tickDuration);
-        this.updateState(simulationDelta);
+        this.simulateTick(tickDuration);
 
-        // Send the accumulation of all state changes this tick, not just the simulationChange.
-        this.sendDeltaStateToAll(this.tickDelta, tickStart);
-        this.tickDelta = {};
+        const nextState = finishDraft(this.workingState)
+        
+        const sendTime = Math.round(tickStart);
+        for (const [_, stateManager] of this._clients) {
+            stateManager.sendState(sendTime, nextState);
+        }
+
+        this.underlyingState = nextState;
+        this.workingState = createDraft(this.underlyingState);
     }
 
     protected stop(message: string = 'This server has stopped') {
@@ -126,5 +120,5 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         super.stop(message);
     }
 
-    protected abstract simulateTick(timestep: number): Delta<TServerState> | undefined;
+    protected abstract simulateTick(timestep: number): void;
 }

@@ -10,7 +10,8 @@ interface IState {
 let clientState: ClientState = {
     rules: {
         active: false
-    }
+    },
+    players: {}
 };
 
 export class Client extends React.Component<{}, IState> {

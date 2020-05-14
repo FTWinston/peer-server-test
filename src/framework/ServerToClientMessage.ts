@@ -1,4 +1,4 @@
-import { Delta } from './Delta';
+import { Patch } from 'immer';
 
 export const commandMessageIdentifier = 'c';
 export const fullStateMessageIdentifier = 's';
@@ -10,7 +10,7 @@ export type ControlOperation = 'simulate';
 
 export type ServerToClientMessage<TServerToClientCommand, TClientState> =
     ['s', TClientState, number] |
-    ['d', Delta<TClientState>, number] |
+    ['d', Patch[], number] |
     ['c', TServerToClientCommand] |
     ['e', string] |
     ['x', ControlOperation];
