@@ -37,8 +37,10 @@ export class RemoteClientConnection<TClientToServerCommand, TServerToClientComma
         channel.onclose = () => this.disconnect();
 
         channel.onerror = error => {
-            console.error(`Error ${error.error.code} in connection to client ${name}: ${error.error.message}`)
             this.disconnect();
+            if (error.error.code !== 0) {
+                console.error(`Error ${error.error.code} in connection to client ${this.clientName}: ${error.error.message}`)
+            }
         };
 
         channel.onmessage = event => {

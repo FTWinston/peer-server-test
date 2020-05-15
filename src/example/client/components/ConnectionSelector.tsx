@@ -12,7 +12,7 @@ export type TypedConnection = ServerConnection<ClientToServerCommand, ServerToCl
 
 interface IProps {
     receiveCommand: (cmd: ServerToClientCommand) => void;
-    receiveState: (state: ClientState) => void;
+    stateChanged: (prevState: ClientState, state: ClientState) => void;
     connectionSelected: (conn: TypedConnection) => void;
 }
 
@@ -33,7 +33,7 @@ export const ConnectionSelector = (props: IProps) => {
                 signalSettings: defaultSignalSettings,
                 worker: new ServerWorker(),
                 receiveCommand: cmd => props.receiveCommand(cmd),
-                //receiveState: state => props.receiveState(state),
+                clientStateChanged: (prevState, state) => props.stateChanged(prevState, state),
                 receiveError: msg => console.error(msg),
             },
             ready
@@ -56,7 +56,7 @@ export const ConnectionSelector = (props: IProps) => {
             signalSettings: defaultSignalSettings,
             clientName: localName,
             receiveCommand: cmd => props.receiveCommand(cmd),
-            //receiveState: state => props.receiveState(state),
+            clientStateChanged: (prevState, state) => props.stateChanged(prevState, state),
             receiveError: msg => console.error(msg),
             ready,
         });
