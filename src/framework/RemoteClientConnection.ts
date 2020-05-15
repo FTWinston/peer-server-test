@@ -12,7 +12,7 @@ export class RemoteClientConnection<TClientToServerCommand, TServerToClientComma
         readonly clientName: string,
         private readonly peer: RTCPeerConnection,
         connected: () => void,
-        disconnected: () => void,
+        private readonly disconnected: () => void,
         private readonly receiveAcknowledge: (time: number) => void,
         private readonly receiveCommand: (command: TClientToServerCommand) => void,
     ) {
@@ -24,17 +24,19 @@ export class RemoteClientConnection<TClientToServerCommand, TServerToClientComma
             connected();
         };
 
-        this.reliable.onclose = () => {
-            disconnected();
-        }
-
         this.setupDataChannel(this.reliable);
+
+        this.peer.onconnectionstatechange = () => {
+            if (this.peer.connectionState !== 'connected') {
+                this.reportDisconnected();
+            }
+        }
     }
 
     private setupDataChannel(
         channel: RTCDataChannel,
     ) {
-        channel.onclose = () => this.disconnect();
+        channel.onclose = () => this.reportDisconnected();
 
         channel.onerror = error => {
             this.disconnect();
@@ -93,5 +95,15 @@ export class RemoteClientConnection<TClientToServerCommand, TServerToClientComma
         if (this.peer.connectionState === 'connected') {
             this.peer.close();
         }
+    }
+
+    private hasDisconnected = false;
+    private reportDisconnected() {
+        if (this.hasDisconnected) {
+            return;
+        }
+
+        this.hasDisconnected = true;
+        this.disconnected();
     }
 }
