@@ -1,5 +1,5 @@
 import { ServerConnection, ConnectionParameters } from './ServerConnection';
-import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier } from './ServerToClientMessage';
+import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, ServerToClientMessage } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
 import { IConnectionSettings } from './SignalConnection';
 import { ClientSignalConnection } from './ClientSignalConnection';
@@ -53,17 +53,27 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
                 this.reliable = event.channel;
 
                 this.reliable.onmessage = event => {
-                    const identifier = event.data[0];
-
-                    if (identifier === commandMessageIdentifier) {
-                        this.receiveCommand(event.data[1]);
-                    }
-                    else if (identifier === errorMessageIdentifier) {
-                        this.receiveError(event.data[1]);
-                        this.disconnect();
-                    }
-                    else {
-                        console.log('Unrecognised reliable message from server', event.data);
+                    const data = JSON.parse(event.data) as ServerToClientMessage<TServerToClientCommand, TClientState>;
+                    
+                    switch (data[0]) {
+                        case fullStateMessageIdentifier:
+                            this.receiveFullState(data[1]);
+                            break;
+                    
+                        case deltaStateMessageIdentifier:
+                            this.receiveDeltaState(data[1]);
+                            break;
+                    
+                        case commandMessageIdentifier:
+                            this.receiveCommand(data[1]);
+                            break;
+                        case errorMessageIdentifier:
+                            this.receiveError(data[1]);
+                            this.disconnect();
+                            break;
+                        default:
+                            console.log('Unrecognised reliable message from server', event.data);
+                            break;
                     }
                 }
 
@@ -75,18 +85,21 @@ export class RemoteServerConnection<TClientToServerCommand, TServerToClientComma
                 this.unreliable = event.channel;
 
                 this.unreliable.onmessage = event => {
-                    const identifier = event.data[0];
+                    const data = JSON.parse(event.data) as ServerToClientMessage<TServerToClientCommand, TClientState>;
+                    switch (data[0]) {
+                        case fullStateMessageIdentifier:
+                            this.sendAcknowledgement(data[2]);
+                            this.receiveFullState(data[1]);
+                            break;
+                    
+                        case deltaStateMessageIdentifier:
+                            this.sendAcknowledgement(data[2]);
+                            this.receiveDeltaState(data[1]);
+                            break;
 
-                    if (identifier === fullStateMessageIdentifier) {
-                        this.sendAcknowledgement(event.data[2]);
-                        this.receiveFullState(event.data[1]);
-                    }
-                    else if (identifier === deltaStateMessageIdentifier) {
-                        this.sendAcknowledgement(event.data[2]);
-                        this.receiveDeltaState(event.data[1]);
-                    }
-                    else {
-                        console.log('Unrecognised unreliable message from server', event.data);
+                        default:
+                            console.log('Unrecognised unreliable message from server', event.data);
+                            break;
                     }
                 }
             }
