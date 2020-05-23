@@ -6,33 +6,52 @@ export interface ConnectionMetadata {
     name: string;
 }
 
-export interface ConnectionParameters<TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}> {
-    initialClientState: TClientState,
-    initialLocalState?: TLocalState,
-    receiveCommand: (cmd: TServerToClientCommand) => void,
-    clientStateChanged?: (prevState: Readonly<TClientState>, newState: Readonly<TClientState>) => void;
+export interface ConnectionParameters<
+    TServerToClientCommand,
+    TClientState extends {},
+    TLocalState extends {} = {}
+> {
+    initialClientState: TClientState;
+    initialLocalState?: TLocalState;
+    receiveCommand: (cmd: TServerToClientCommand) => void;
+    clientStateChanged?: (
+        prevState: Readonly<TClientState>,
+        newState: Readonly<TClientState>
+    ) => void;
     receiveError: (message: string) => void;
 }
 
-export abstract class ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}> {
+export abstract class ServerConnection<
+    TClientToServerCommand,
+    TServerToClientCommand,
+    TClientState extends {},
+    TLocalState extends {} = {}
+> {
     constructor(
-        params: ConnectionParameters<TServerToClientCommand, TClientState, TLocalState>
+        params: ConnectionParameters<
+            TServerToClientCommand,
+            TClientState,
+            TLocalState
+        >
     ) {
         this.receiveCommand = params.receiveCommand;
         this.receiveError = params.receiveError;
         this.clientStateChanged = params.clientStateChanged;
         this._clientState = params.initialClientState;
     }
-    
+
     protected readonly receiveCommand: (cmd: TServerToClientCommand) => void;
     protected readonly receiveError: (message: string) => void;
-    private readonly clientStateChanged?: (prevState: TClientState, newState: TClientState) => void;
+    private readonly clientStateChanged?: (
+        prevState: TClientState,
+        newState: TClientState
+    ) => void;
     private _clientState: TClientState;
-    
+
     get clientState(): Readonly<TClientState> {
         return this._clientState;
     }
-    
+
     public localState: TLocalState;
 
     protected receiveFullState(newState: TClientState) {

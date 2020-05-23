@@ -1,41 +1,76 @@
 import { ServerConnection, ConnectionParameters } from './ServerConnection';
-import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
-import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
+import {
+    ServerWorkerMessageIn,
+    ServerWorkerMessageInType,
+} from './ServerWorkerMessageIn';
+import {
+    ServerWorkerMessageOut,
+    ServerWorkerMessageOutType,
+} from './ServerWorkerMessageOut';
 import { ControlOperation } from './ServerToClientMessage';
 import { Patch } from 'immer';
 
-export interface OfflineConnectionParameters<TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}>
-    extends ConnectionParameters<TServerToClientCommand, TClientState, TLocalState>
-{
+export interface OfflineConnectionParameters<
+    TServerToClientCommand,
+    TClientState extends {},
+    TLocalState extends {} = {}
+>
+    extends ConnectionParameters<
+        TServerToClientCommand,
+        TClientState,
+        TLocalState
+    > {
     worker: Worker;
 }
 
-export class OfflineServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}>
-    extends ServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState, TLocalState> {
-
+export class OfflineServerConnection<
+    TClientToServerCommand,
+    TServerToClientCommand,
+    TClientState extends {},
+    TLocalState extends {} = {}
+> extends ServerConnection<
+    TClientToServerCommand,
+    TServerToClientCommand,
+    TClientState,
+    TLocalState
+> {
     constructor(
-        params: OfflineConnectionParameters<TServerToClientCommand, TClientState, TLocalState>,
-        ready: () => void,
+        params: OfflineConnectionParameters<
+            TServerToClientCommand,
+            TClientState,
+            TLocalState
+        >,
+        ready: () => void
     ) {
         super(params);
         this.worker = params.worker;
-        this.worker.onmessage = e => this.receiveMessageFromServer(e.data);
+        this.worker.onmessage = (e) => this.receiveMessageFromServer(e.data);
         this.ready = ready;
     }
 
     private readonly worker: Worker;
     private ready?: () => void;
 
-    private receiveMessageFromServer(message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) {
+    private receiveMessageFromServer(
+        message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>
+    ) {
         switch (message.type) {
             case ServerWorkerMessageOutType.Command:
                 this.dispatchCommandFromServer(message.who, message.command);
                 break;
             case ServerWorkerMessageOutType.FullState:
-                this.dispatchFullStateFromServer(message.who, message.state, message.time);
+                this.dispatchFullStateFromServer(
+                    message.who,
+                    message.state,
+                    message.time
+                );
                 break;
             case ServerWorkerMessageOutType.DeltaState:
-                this.dispatchDeltaStateFromServer(message.who, message.state, message.time);
+                this.dispatchDeltaStateFromServer(
+                    message.who,
+                    message.state,
+                    message.time
+                );
                 break;
             case ServerWorkerMessageOutType.Ready:
                 if (this.ready) {
@@ -51,7 +86,10 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
                 this.dispatchControl(message.who, message.operation);
                 break;
             default:
-                console.log('received unrecognised message from worker', message);
+                console.log(
+                    'received unrecognised message from worker',
+                    message
+                );
                 break;
         }
     }
@@ -63,11 +101,18 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
         });
     }
 
-    protected dispatchCommandFromServer(client: string | undefined, command: TServerToClientCommand) {
+    protected dispatchCommandFromServer(
+        client: string | undefined,
+        command: TServerToClientCommand
+    ) {
         this.receiveCommand(command);
     }
 
-    protected dispatchFullStateFromServer(client: string, state: TClientState, time: number) {
+    protected dispatchFullStateFromServer(
+        client: string,
+        state: TClientState,
+        time: number
+    ) {
         this.sendMessageToServer({
             type: ServerWorkerMessageInType.Acknowledge,
             who: this.localId,
@@ -77,7 +122,11 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
         this.receiveFullState(state);
     }
 
-    protected dispatchDeltaStateFromServer(client: string, state: Patch[], time: number) {
+    protected dispatchDeltaStateFromServer(
+        client: string,
+        state: Patch[],
+        time: number
+    ) {
         this.sendMessageToServer({
             type: ServerWorkerMessageInType.Acknowledge,
             who: this.localId,
@@ -87,7 +136,9 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
         this.receiveDeltaState(state);
     }
 
-    protected sendMessageToServer(message: ServerWorkerMessageIn<TClientToServerCommand>) {
+    protected sendMessageToServer(
+        message: ServerWorkerMessageIn<TClientToServerCommand>
+    ) {
         this.worker.postMessage(message);
     }
 
@@ -96,7 +147,7 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
             type: ServerWorkerMessageInType.Command,
             who: this.localId,
             command,
-        })
+        });
     }
 
     protected dispatchError(client: string | undefined, message: string) {
@@ -104,11 +155,16 @@ export class OfflineServerConnection<TClientToServerCommand, TServerToClientComm
         this.disconnect();
     }
 
-    protected dispatchControl(client: string | undefined, message: ControlOperation) { }
+    protected dispatchControl(
+        client: string | undefined,
+        message: ControlOperation
+    ) {}
 
     disconnect() {
         this.worker.terminate();
     }
 
-    get localId() { return 'local'; }
+    get localId() {
+        return 'local';
+    }
 }

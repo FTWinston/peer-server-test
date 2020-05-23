@@ -10,9 +10,9 @@ interface IState {
 
 let clientState: ClientState = {
     rules: {
-        active: false
+        active: false,
     },
-    players: {}
+    players: {},
 };
 
 export const Client: React.FC = () => {
@@ -20,20 +20,23 @@ export const Client: React.FC = () => {
     const [state, setState] = useState<ClientState>(clientState);
 
     if (connection === undefined) {
-        const stateReceived = (prevState: ClientState, state: ClientState) => setState(state);
+        const stateReceived = (prevState: ClientState, state: ClientState) =>
+            setState(state);
 
         const connectionSelected = (connection: TypedConnection) => {
             setConnection(connection);
 
             connection.sendCommand('shoot');
-        }
+        };
 
         // TODO: expose the connection's state (or the connection itself, more likely)
-        return <ConnectionSelector
-            connectionSelected={connectionSelected}
-            receiveCommand={commandReceived}
-            stateChanged={stateReceived}
-        />
+        return (
+            <ConnectionSelector
+                connectionSelected={connectionSelected}
+                receiveCommand={commandReceived}
+                stateChanged={stateReceived}
+            />
+        );
     }
 
     const players: JSX.Element[] = [];
@@ -42,25 +45,33 @@ export const Client: React.FC = () => {
         players.push(
             <div
                 key={name}
-                style={{left: state.players[name].x * 50, margin: '2em 0', position: 'relative'}}
+                style={{
+                    left: state.players[name].x * 50,
+                    margin: '2em 0',
+                    position: 'relative',
+                }}
             >
                 {name}
             </div>
-        )
+        );
     }
 
     return (
         <div>
             Connected to server
-
-            <button onClick={() => connection!.sendCommand('left')}>left</button>
-            <button onClick={() => connection!.sendCommand('right')}>right</button>
-            <button onClick={() => connection!.sendCommand('shoot')}>shoot</button>
-
+            <button onClick={() => connection!.sendCommand('left')}>
+                left
+            </button>
+            <button onClick={() => connection!.sendCommand('right')}>
+                right
+            </button>
+            <button onClick={() => connection!.sendCommand('shoot')}>
+                shoot
+            </button>
             {players}
         </div>
     );
-}
+};
 
 function commandReceived(cmd: ServerToClientCommand) {
     console.log('client received command', cmd);

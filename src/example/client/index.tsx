@@ -3,7 +3,4 @@ import * as ReactDOM from 'react-dom';
 
 import { Client } from './components/Client';
 
-ReactDOM.render (
-    <Client />,
-    document.getElementById('root')
-);
+ReactDOM.render(<Client />, document.getElementById('root'));

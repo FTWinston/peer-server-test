@@ -8,7 +8,7 @@ export class ClientSignalConnection extends SignalConnection {
         private readonly sessionId: string,
         private readonly clientName: string,
         join: (peer: RTCPeerConnection) => void,
-        disconnected: () => void,
+        disconnected: () => void
     ) {
         super(disconnected, settings);
 
@@ -41,7 +41,12 @@ export class ClientSignalConnection extends SignalConnection {
 
         await this.peer.setLocalDescription(offer);
 
-        this.send(['join', this.sessionId, this.clientName, this.peer.localDescription.sdp]);
+        this.send([
+            'join',
+            this.sessionId,
+            this.clientName,
+            this.peer.localDescription.sdp,
+        ]);
     }
 
     protected async receivedMessage(event: MessageEvent) {
@@ -49,17 +54,19 @@ export class ClientSignalConnection extends SignalConnection {
         const message = data[0];
 
         if (!Array.isArray(data) || data.length < 1) {
-            throw new Error(`Unexpected data type received from signal server, expected array but got ${data}`);
+            throw new Error(
+                `Unexpected data type received from signal server, expected array but got ${data}`
+            );
         }
 
         if (message === 'answer') {
             await this.receiveAnswer(data[1]);
-        }
-        else if (message === 'ice') {
+        } else if (message === 'ice') {
             await this.receiveIce(JSON.parse(data[2]));
-        }
-        else {
-            throw new Error(`Unexpected data received from signal server, expected answer or ice, but got ${message}`);
+        } else {
+            throw new Error(
+                `Unexpected data received from signal server, expected answer or ice, but got ${message}`
+            );
         }
     }
 
@@ -67,10 +74,10 @@ export class ClientSignalConnection extends SignalConnection {
         if (process.env.NODE_ENV === 'development') {
             console.log('set remote description');
         }
-        
+
         await this.peer.setRemoteDescription({
             sdp: answer,
-            type: 'answer'
+            type: 'answer',
         });
     }
 
@@ -78,7 +85,7 @@ export class ClientSignalConnection extends SignalConnection {
         if (process.env.NODE_ENV === 'development') {
             console.log('receive ice');
         }
-        
+
         await this.peer.addIceCandidate(candidate);
     }
 }

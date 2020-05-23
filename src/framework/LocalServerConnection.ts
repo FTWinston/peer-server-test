@@ -1,27 +1,63 @@
 import { ServerWorkerMessageInType } from './ServerWorkerMessageIn';
-import { commandMessageIdentifier, deltaStateMessageIdentifier, fullStateMessageIdentifier, errorMessageIdentifier, controlMessageIdentifier, ControlOperation, ServerToClientMessage } from './ServerToClientMessage';
-import { OfflineServerConnection as OfflineServerConnection, OfflineConnectionParameters } from './OfflineServerConnection';
+import {
+    commandMessageIdentifier,
+    deltaStateMessageIdentifier,
+    fullStateMessageIdentifier,
+    errorMessageIdentifier,
+    controlMessageIdentifier,
+    ControlOperation,
+    ServerToClientMessage,
+} from './ServerToClientMessage';
+import {
+    OfflineServerConnection,
+    OfflineConnectionParameters,
+} from './OfflineServerConnection';
 import { ConnectionManager } from './ConnectionManager';
 import { IClientConnection } from './IClientConnection';
 import { IConnectionSettings } from './SignalConnection';
 import { Patch } from 'immer';
 
-export interface LocalConnectionParameters<TServerToClientCommand, TClientState extends {}, TLocalState extends {}>
-    extends OfflineConnectionParameters<TServerToClientCommand, TClientState, TLocalState>
-{
+export interface LocalConnectionParameters<
+    TServerToClientCommand,
+    TClientState extends {},
+    TLocalState extends {}
+>
+    extends OfflineConnectionParameters<
+        TServerToClientCommand,
+        TClientState,
+        TLocalState
+    > {
     signalSettings: IConnectionSettings;
     clientName: string;
 }
 
-export class LocalServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState extends {}, TLocalState extends {} = {}>
-    extends OfflineServerConnection<TClientToServerCommand, TServerToClientCommand, TClientState, TLocalState>
+export class LocalServerConnection<
+    TClientToServerCommand,
+    TServerToClientCommand,
+    TClientState extends {},
+    TLocalState extends {} = {}
+>
+    extends OfflineServerConnection<
+        TClientToServerCommand,
+        TServerToClientCommand,
+        TClientState,
+        TLocalState
+    >
     implements IClientConnection<TServerToClientCommand, TClientState> {
-    private clients: ConnectionManager<TClientToServerCommand, TServerToClientCommand, TClientState>;
+    private clients: ConnectionManager<
+        TClientToServerCommand,
+        TServerToClientCommand,
+        TClientState
+    >;
     readonly clientName: string;
 
     constructor(
-        params: LocalConnectionParameters<TServerToClientCommand, TClientState, TLocalState>,
-        ready: () => void,
+        params: LocalConnectionParameters<
+            TServerToClientCommand,
+            TClientState,
+            TLocalState
+        >,
+        ready: () => void
     ) {
         super(params, () => {
             if (params.clientName.length < 1) {
@@ -31,10 +67,10 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
             }
 
             this.clients = new ConnectionManager(
-                message => this.sendMessageToServer(message),
-                sessionID => {
+                (message) => this.sendMessageToServer(message),
+                (sessionID) => {
                     console.log(`Session ID is ${sessionID}`); // TODO: expose the session ID somewhere!
-                    
+
                     this.sendMessageToServer({
                         type: ServerWorkerMessageInType.Join,
                         who: params.clientName,
@@ -43,7 +79,7 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
                     ready();
                 },
                 params.signalSettings,
-                this,
+                this
             );
         });
 
@@ -54,45 +90,76 @@ export class LocalServerConnection<TClientToServerCommand, TServerToClientComman
         // Don't send a join message right away. This will instead be sent once the peer is initialized.
     }
 
-    send(message: ServerToClientMessage<TServerToClientCommand, TClientState>): void {
+    send(
+        message: ServerToClientMessage<TServerToClientCommand, TClientState>
+    ): void {
         // TODO: can we avoid having this AND separate dispatch operations?
 
         if (message[0] === 's') {
-            super.dispatchFullStateFromServer(this.clientName, message[1], message[2]);
-        }
-        else if (message[0] === 'd') {
-            super.dispatchDeltaStateFromServer(this.clientName, message[1], message[2]);
-        }
-        else if (message[0] === 'c') {
+            super.dispatchFullStateFromServer(
+                this.clientName,
+                message[1],
+                message[2]
+            );
+        } else if (message[0] === 'd') {
+            super.dispatchDeltaStateFromServer(
+                this.clientName,
+                message[1],
+                message[2]
+            );
+        } else if (message[0] === 'c') {
             super.dispatchCommandFromServer(this.clientName, message[1]);
-        }
-        else if (message[0] === 'e') {
+        } else if (message[0] === 'e') {
             super.dispatchError(this.clientName, message[1]);
-        }
-        else if (message[0] === 'x') {
+        } else if (message[0] === 'x') {
             // control operation ... doesn't apply to local client?
         }
     }
 
-    protected dispatchCommandFromServer(client: string | undefined, command: TServerToClientCommand) {
-        this.clients.sendToClient(client, [commandMessageIdentifier, command])
+    protected dispatchCommandFromServer(
+        client: string | undefined,
+        command: TServerToClientCommand
+    ) {
+        this.clients.sendToClient(client, [commandMessageIdentifier, command]);
     }
 
-    protected dispatchFullStateFromServer(client: string, state: TClientState, time: number) {
-        this.clients.sendToClient(client, [fullStateMessageIdentifier, state, time])
+    protected dispatchFullStateFromServer(
+        client: string,
+        state: TClientState,
+        time: number
+    ) {
+        this.clients.sendToClient(client, [
+            fullStateMessageIdentifier,
+            state,
+            time,
+        ]);
     }
 
-    protected dispatchDeltaStateFromServer(client: string, state: Patch[], time: number) {
-        this.clients.sendToClient(client, [deltaStateMessageIdentifier, state, time])
+    protected dispatchDeltaStateFromServer(
+        client: string,
+        state: Patch[],
+        time: number
+    ) {
+        this.clients.sendToClient(client, [
+            deltaStateMessageIdentifier,
+            state,
+            time,
+        ]);
     }
 
     protected dispatchError(client: string | undefined, message: string) {
-        this.clients.sendToClient(client, [errorMessageIdentifier, message])
+        this.clients.sendToClient(client, [errorMessageIdentifier, message]);
         this.clients.disconnect(client);
     }
 
-    protected dispatchControl(client: string | undefined, operation: ControlOperation) {
-        this.clients.sendToClient(client, [controlMessageIdentifier, operation]);
+    protected dispatchControl(
+        client: string | undefined,
+        operation: ControlOperation
+    ) {
+        this.clients.sendToClient(client, [
+            controlMessageIdentifier,
+            operation,
+        ]);
     }
 
     disconnect() {

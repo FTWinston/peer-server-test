@@ -1,3 +1,3 @@
-export type ServerToClientCommand = 
-['explode', string] |
-['spawn', string, number, number];
+export type ServerToClientCommand =
+    | ['explode', string]
+    | ['spawn', string, number, number];

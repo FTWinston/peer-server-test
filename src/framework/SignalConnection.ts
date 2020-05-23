@@ -26,29 +26,30 @@ export abstract class SignalConnection {
 
     constructor(
         protected readonly disconnected: () => void,
-        settings: Partial<IConnectionSettings> = {},
+        settings: Partial<IConnectionSettings> = {}
     ) {
         this.settings = {
             ...defaultSignalSettings,
             ...settings,
             rtcConfig: settings.rtcConfig
                 ? {
-                    ...defaultSignalSettings.rtcConfig,
-                    ...settings.rtcConfig,
-                } : defaultSignalSettings.rtcConfig,
+                      ...defaultSignalSettings.rtcConfig,
+                      ...settings.rtcConfig,
+                  }
+                : defaultSignalSettings.rtcConfig,
         };
 
         this.socket = new WebSocket(settings.signalUrl);
 
-        this.socket.onopen = event => this.socketOpened(event);
+        this.socket.onopen = (event) => this.socketOpened(event);
 
-        this.socket.onmessage = event => this.receivedMessage(event);
+        this.socket.onmessage = (event) => this.receivedMessage(event);
 
-        this.socket.onclose = event => {
+        this.socket.onclose = (event) => {
             this.disconnected();
         };
 
-        this.socket.onerror = event => {
+        this.socket.onerror = (event) => {
             this.disconnected();
         };
     }
@@ -69,8 +70,8 @@ export abstract class SignalConnection {
         return new RTCPeerConnection(this.settings.rtcConfig);
     }
 
-    gatherIce(peer: RTCPeerConnection, remoteName: string) {        
-        peer.onicecandidate = event => {
+    gatherIce(peer: RTCPeerConnection, remoteName: string) {
+        peer.onicecandidate = (event) => {
             if (!event.candidate) {
                 if (process.env.NODE_ENV === 'development') {
                     console.log('no more ice candidates');
@@ -84,7 +85,11 @@ export abstract class SignalConnection {
 
             // Don't bother sending ice if already connected.
             if (this.socket.readyState === WebSocket.OPEN) {
-                this.send(['ice', remoteName, JSON.stringify(event.candidate.toJSON())]);
+                this.send([
+                    'ice',
+                    remoteName,
+                    JSON.stringify(event.candidate.toJSON()),
+                ]);
             }
         };
     }
@@ -99,15 +104,16 @@ export abstract class SignalConnection {
 }
 
 export const defaultSignalSettings: IConnectionSettings = {
-    signalUrl: process.env.NODE_ENV === 'production'
-        ? 'wss://signal.ftwinston.com'
-        : 'ws://localhost:63367',
+    signalUrl:
+        process.env.NODE_ENV === 'production'
+            ? 'wss://signal.ftwinston.com'
+            : 'ws://localhost:63367',
     rtcConfig: {
         iceCandidatePoolSize: 4,
         iceServers: [
             {
-                urls: 'stun:stun.l.google.com:19302'
-            }
+                urls: 'stun:stun.l.google.com:19302',
+            },
         ],
     },
-}
+};
