@@ -2,9 +2,10 @@ import {
     ServerWorkerMessageOut,
     ServerWorkerMessageOutType,
 } from './ServerWorkerMessageOut';
-import { Draft, createDraft, finishDraft, Patch, enablePatches } from 'immer';
+import { Draft, createDraft, finishDraft, Patch, enablePatches, setAutoFreeze } from 'immer';
 
 enablePatches();
+setAutoFreeze(false); // Perhaps immer isn't the best fit if we just use it for patch generation.
 
 export class ClientStateManager<TClientState, TServerToClientCommand> {
     public constructor(
