@@ -67,55 +67,54 @@ export abstract class Server<
     public receiveMessage(
         message: ServerWorkerMessageIn<TClientToServerCommand>
     ) {
+        const client = message.who;
+
         switch (message.type) {
             case ServerWorkerMessageInType.Join: {
-                const joinError = this.getJoinError(message.who);
+                const joinError = this.getJoinError(client);
 
                 if (joinError !== null) {
                     this.sendMessage({
                         type: ServerWorkerMessageOutType.Disconnect,
-                        who: message.who,
+                        who: client,
                         message: joinError,
                     });
                     break;
                 }
 
                 if (process.env.NODE_ENV === 'development') {
-                    console.log(`${message.who} joined`);
+                    console.log(`${client} joined`);
                 }
 
                 const substituteState = (newState: TClientState) =>
-                    this.substituteClientState(message.who, newState);
+                    this.substituteClientState(client, newState);
 
                 this.addClient(
-                    message.who,
-                    this.createClientState(message.who),
+                    client,
+                    this.createClientState(client),
                     substituteState
                 );
-                this.clientJoined(message.who);
+                this.clientJoined(client);
                 break;
             }
 
             case ServerWorkerMessageInType.Quit: {
                 if (process.env.NODE_ENV === 'development') {
-                    console.log(`${message.who} quit`);
+                    console.log(`${client} quit`);
                 }
 
-                if (this.removeClient(message.who)) {
-                    this.removeClientState(message.who);
-                    this.clientQuit(message.who);
+                if (this.removeClient(client)) {
+                    this.removeClientState(client);
+                    this.clientQuit(client);
                 }
                 break;
             }
 
             case ServerWorkerMessageInType.Command: {
                 if (process.env.NODE_ENV === 'development') {
-                    console.log(
-                        `${message.who} issued a command`,
-                        message.command
-                    );
+                    console.log(`${client} issued a command`, message.command);
                 }
-                this.receiveCommandFromClient(message.who, message.command);
+                this.receiveCommandFromClient(client, message.command);
                 break;
             }
 
