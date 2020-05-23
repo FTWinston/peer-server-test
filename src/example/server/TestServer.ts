@@ -4,21 +4,31 @@ import { ServerState } from './ServerState';
 import { Player, ClientState } from '../shared/ClientState';
 import { SimulatingServer } from '../../framework/SimulatingServer';
 import { ServerWorkerMessageOut } from '../../framework/ServerWorkerMessageOut';
-import { Draft } from 'immer';
+import { FieldMappings, anyOtherFields } from 'filter-mirror';
 
 const tickInterval = 500; // this many milliseconds between each server tick
 
-export class TestServer extends SimulatingServer<ServerState, ServerState, ClientToServerCommand, ServerToClientCommand>
-{
+export class TestServer extends SimulatingServer<
+    ServerState,
+    ServerState,
+    ClientToServerCommand,
+    ServerToClientCommand
+> {
     constructor(
-        sendMessage: (message: ServerWorkerMessageOut<ServerToClientCommand, ServerState>) => void
+        sendMessage: (
+            message: ServerWorkerMessageOut<ServerToClientCommand, ServerState>
+        ) => void
     ) {
-        super({
-            rules: {
-                active: true,
+        super(
+            {
+                rules: {
+                    active: true,
+                },
+                players: {},
             },
-            players: {},
-        }, sendMessage, tickInterval);
+            sendMessage,
+            tickInterval
+        );
     }
 
     protected clientJoined(name: string) {
@@ -27,9 +37,9 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
         const player: Player = {
             x: 0,
             y: 0,
-        }
+        };
 
-        this.updateState(state => {
+        this.updateState((state) => {
             state.players = {
                 ...state.players,
                 [name]: player,
@@ -40,7 +50,7 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
     protected clientQuit(name: string) {
         console.log(`${name} disconnected`);
 
-        this.updateState(state => {
+        this.updateState((state) => {
             state.players = {
                 ...state.players,
             };
@@ -48,12 +58,15 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
         });
     }
 
-    public receiveCommandFromClient(name: string, command: ClientToServerCommand): void {
+    public receiveCommandFromClient(
+        name: string,
+        command: ClientToServerCommand
+    ): void {
         switch (command) {
             case 'left': {
                 console.log(`${name} moved left`);
 
-                this.updateState(state => {
+                this.updateState((state) => {
                     const player = state.players[name];
                     if (player !== undefined) {
                         player.x--;
@@ -64,7 +77,7 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
             case 'right': {
                 console.log(`${name} moved right`);
 
-                this.updateState(state => {
+                this.updateState((state) => {
                     const player = state.players[name];
                     if (player !== undefined) {
                         player.x++;
@@ -83,14 +96,12 @@ export class TestServer extends SimulatingServer<ServerState, ServerState, Clien
         // TODO: simulate stuff
     }
 
-    protected updateClientState(client: string, clientState: Partial<Draft<ClientState>>, prevServerState: ServerState | null, serverState: ServerState) {
-        if (prevServerState?.rules !== serverState.rules) {
-            clientState.rules = serverState.rules;
-        }
-
-        // TODO: only send the player(s) that changed
-        if (prevServerState?.players !== serverState.players) {
-            clientState.players = serverState.players;
-        }
+    protected mapClientState(): FieldMappings<ServerState, ClientState> {
+        return {
+            rules: true,
+            players: {
+                [anyOtherFields]: true,
+            },
+        };
     }
 }

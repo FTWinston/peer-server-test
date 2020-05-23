@@ -1,37 +1,53 @@
-import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
-import produce, { Draft, createDraft, finishDraft, Patch } from 'immer';
+import {
+    ServerWorkerMessageOut,
+    ServerWorkerMessageOutType,
+} from './ServerWorkerMessageOut';
+import { Draft, createDraft, finishDraft, Patch, enablePatches } from 'immer';
 
-export class ClientStateManager<TServerState, TClientState, TServerToClientCommand> {
+enablePatches();
+
+export class ClientStateManager<TClientState, TServerToClientCommand> {
     public constructor(
         public readonly name: string,
-        private readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void,
-        protected readonly updateClientState: (client: string, clientState: Partial<Draft<TClientState>>, prevServerState: TServerState | null, serverState: TServerState) => void,
-    ) { }
+        private state: TClientState,
+        private readonly sendMessage: (
+            message: ServerWorkerMessageOut<
+                TServerToClientCommand,
+                TClientState
+            >
+        ) => void,
+        protected readonly registerProxy: (
+            newState: TClientState | Draft<TClientState>
+        ) => void
+    ) {
+        this.updateDraft();
+    }
 
-    private lastServerState: TServerState | null = null;
-    private clientState: TClientState = {} as TClientState;
+    private draftState: Draft<TClientState> | undefined;
 
-    public sendState(time: number, serverState: TServerState) {
-        const draftClientState = createDraft(this.clientState);
+    private updateDraft() {
+        this.draftState = createDraft(this.state);
 
-        this.updateClientState(this.name, draftClientState, this.lastServerState, serverState)
+        this.registerProxy(this.draftState);
+    }
 
-        if (this.shouldSendFullState(time)) {
-            this.clientState = finishDraft(draftClientState);
-
-            this.sendFullState(time, this.clientState);
-        }
-        else {
-            this.clientState = finishDraft(draftClientState, patches => {
+    public sendState(time: number) {
+        if (this.draftState === undefined) {
+            this.sendFullState(time, this.state);
+        } else if (this.shouldSendFullState(time)) {
+            this.state = finishDraft(this.draftState);
+            this.sendFullState(time, this.state);
+        } else {
+            this.state = finishDraft(this.draftState, (patches) => {
                 this.sendStateUpdate(time, patches);
             });
         }
 
-        this.lastServerState = serverState;
+        this.updateDraft();
     }
 
     protected shouldSendFullState(time: number) {
-        return this.lastServerState == null;
+        return false;
     }
 
     protected sendFullState(time: number, state: TClientState) {

@@ -1,42 +1,55 @@
 import { Server } from './Server';
-import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
-import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
-import { Draft, createDraft, finishDraft } from 'immer';
+import {
+    ServerWorkerMessageOut,
+    ServerWorkerMessageOutType,
+} from './ServerWorkerMessageOut';
+import {
+    ServerWorkerMessageIn,
+    ServerWorkerMessageInType,
+} from './ServerWorkerMessageIn';
 import { UnreliableClientStateManager } from './UnreliableClientStateManager';
 
-export abstract class SimulatingServer<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> 
-    extends Server<TServerState, TClientState, TClientToServerCommand, TServerToClientCommand>
-{
-    private readonly _clients = new Map<string, UnreliableClientStateManager<TServerState, TClientState, TServerToClientCommand>>();
-
-    private underlyingState: TServerState;
-    private workingState: Draft<TServerState>;
+export abstract class SimulatingServer<
+    TServerState extends {},
+    TClientState extends {},
+    TClientToServerCommand,
+    TServerToClientCommand
+> extends Server<
+    TServerState,
+    TClientState,
+    TClientToServerCommand,
+    TServerToClientCommand
+> {
+    private readonly _clients = new Map<
+        string,
+        UnreliableClientStateManager<TClientState, TServerToClientCommand>
+    >();
 
     private tickTimer: NodeJS.Timeout | undefined;
     private lastTickTime: number;
 
     constructor(
         initialState: TServerState,
-        sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void,
+        sendMessage: (
+            message: ServerWorkerMessageOut<
+                TServerToClientCommand,
+                TClientState
+            >
+        ) => void,
         private readonly tickInterval: number
     ) {
-        super(sendMessage);
-
-        this.underlyingState = initialState;
-        this.workingState = createDraft(initialState);
+        super(initialState, sendMessage);
 
         this.resume();
     }
 
-    public get clients() { return this._clients.keys(); }
-
-    protected get state(): Readonly<TServerState> { return this.workingState as TServerState; }
+    public get clients() {
+        return this._clients.keys();
+    }
 
     // TODO: status? e.g. not started, active, paused, finished
-    public get isRunning() { return this.tickInterval !== undefined; }
-
-    protected updateState(update: (state: Draft<TServerState>) => void) {
-        update(this.workingState);
+    public get isRunning() {
+        return this.tickInterval !== undefined;
     }
 
     public pause() {
@@ -56,12 +69,16 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
         this.lastTickTime = performance.now() - this.tickInterval;
         this.tickTimer = setInterval(() => this.tick(), this.tickInterval);
     }
-    
+
     protected isNameInUse(name: string) {
         return this._clients.has(name);
     }
-    
-    protected addClient(client: string) {
+
+    protected addClient(
+        client: string,
+        state: TClientState,
+        substituteState: (newState: TClientState) => void
+    ) {
         // Now that client has established a reliable connection, instruct them
         // to also connect unreliably, for use with sending state updates every tick.
         this.sendMessage({
@@ -72,19 +89,20 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
 
         this._clients.set(
             client,
-            new UnreliableClientStateManager<TServerState, TClientState, TServerToClientCommand>(
-                client,
-                this.sendMessage,
-                this.updateClientState,
-            )
+            new UnreliableClientStateManager<
+                TClientState,
+                TServerToClientCommand
+            >(client, state, this.sendMessage, substituteState)
         );
     }
 
-    protected removeClient(client: string) { 
+    protected removeClient(client: string) {
         return this._clients.delete(client);
     }
 
-    public receiveMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {
+    public receiveMessage(
+        message: ServerWorkerMessageIn<TClientToServerCommand>
+    ) {
         switch (message.type) {
             case ServerWorkerMessageInType.Acknowledge:
                 const client = this._clients.get(message.who);
@@ -104,15 +122,10 @@ export abstract class SimulatingServer<TServerState extends {}, TClientState ext
 
         this.simulateTick(tickDuration);
 
-        const nextState = finishDraft(this.workingState)
-        
         const sendTime = Math.round(tickStart);
         for (const [_, stateManager] of this._clients) {
-            stateManager.sendState(sendTime, nextState);
+            stateManager.sendState(sendTime);
         }
-
-        this.underlyingState = nextState;
-        this.workingState = createDraft(this.underlyingState);
     }
 
     protected stop(message: string = 'This server has stopped') {

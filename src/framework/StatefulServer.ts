@@ -1,58 +1,73 @@
 import { ServerWorkerMessageOut } from './ServerWorkerMessageOut';
 import { Server } from './Server';
-import produce, { Draft } from 'immer';
 import { ClientStateManager } from './ClientStateManager';
 
-export abstract class StatefulServer<TServerState extends {}, TClientState extends {}, TClientToServerCommand, TServerToClientCommand> 
-    extends Server<TServerState, TClientState, TClientToServerCommand, TServerToClientCommand>
-{
-    private readonly _clients = new Map<string, ClientStateManager<TServerState, TClientState, TServerToClientCommand>>();
-
-    private _state: TServerState;
+export abstract class StatefulServer<
+    TServerState extends {},
+    TClientState extends {},
+    TClientToServerCommand,
+    TServerToClientCommand
+> extends Server<
+    TServerState,
+    TClientState,
+    TClientToServerCommand,
+    TServerToClientCommand
+> {
+    private readonly _clients = new Map<
+        string,
+        ClientStateManager<TClientState, TServerToClientCommand>
+    >();
 
     constructor(
         initialState: TServerState,
-        protected readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void
+        protected readonly sendMessage: (
+            message: ServerWorkerMessageOut<
+                TServerToClientCommand,
+                TClientState
+            >
+        ) => void
     ) {
-        super(sendMessage);
-        this._state = initialState;
+        super(initialState, sendMessage);
     }
 
-    public get clients() { return this._clients.keys(); }
-
-    protected get state(): Readonly<TServerState> { return this._state; }
+    public get clients() {
+        return this._clients.keys();
+    }
 
     protected isNameInUse(name: string) {
         return this._clients.has(name);
     }
 
-    protected addClient(client: string) {
+    protected addClient(
+        client: string,
+        state: TClientState,
+        substituteState: (newState: TClientState) => void
+    ) {
         this._clients.set(
             client,
-            new ClientStateManager<TServerState, TClientState, TServerToClientCommand>(
+            new ClientStateManager<TClientState, TServerToClientCommand>(
                 client,
+                state,
                 this.sendMessage,
-                this.updateClientState,
+                substituteState
             )
         );
 
         const time = Math.round(performance.now());
-        this._clients.get(client)?.sendState(time, this._state);
+        this._clients.get(client)?.sendState(time);
     }
 
     protected removeClient(name: string) {
         return this._clients.delete(name);
     }
 
-    protected updateState(update: (state: Draft<TServerState>) => void) {
-        const nextState = produce(this._state, update);
+    protected updateState(update: (state: TServerState) => void) {
+        super.updateState(update);
 
         const time = Math.round(performance.now());
-        
-        for (const [_, stateManager] of this._clients) {
-            stateManager.sendState(time, nextState);
-        }
 
-        this._state = nextState;
+        for (const [_, stateManager] of this._clients) {
+            stateManager.sendState(time);
+        }
     }
 }

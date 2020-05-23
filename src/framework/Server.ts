@@ -1,8 +1,12 @@
-import { ServerWorkerMessageIn, ServerWorkerMessageInType } from './ServerWorkerMessageIn';
-import { ServerWorkerMessageOut, ServerWorkerMessageOutType } from './ServerWorkerMessageOut';
-import { enablePatches, Draft } from 'immer';
-
-enablePatches();
+import {
+    ServerWorkerMessageIn,
+    ServerWorkerMessageInType,
+} from './ServerWorkerMessageIn';
+import {
+    ServerWorkerMessageOut,
+    ServerWorkerMessageOutType,
+} from './ServerWorkerMessageOut';
+import { FieldMappings, multiFilter } from 'filter-mirror';
 
 export abstract class Server<
     TServerState extends {},
@@ -11,20 +15,58 @@ export abstract class Server<
     TServerToClientCommand
 > {
     constructor(
-        protected readonly sendMessage: (message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>) => void
+        initialState: TServerState,
+        protected readonly sendMessage: (
+            message: ServerWorkerMessageOut<
+                TServerToClientCommand,
+                TClientState
+            >
+        ) => void
     ) {
         sendMessage({
             type: ServerWorkerMessageOutType.Ready,
         });
+
+        const {
+            proxy,
+            createMirror,
+            removeMirror,
+            substituteMirror,
+        } = multiFilter<TServerState, TClientState, string>(
+            initialState,
+            (client) => this.mapClientState(client)
+        );
+
+        this._state = proxy;
+        this.createClientState = createMirror;
+        this.removeClientState = removeMirror;
+        this.substituteClientState = substituteMirror;
+    }
+
+    private createClientState: (client: string) => TClientState;
+
+    private removeClientState: (client: string) => void;
+
+    protected substituteClientState: (
+        client: string,
+        state: TClientState
+    ) => void;
+
+    private _state: TServerState;
+
+    public get state(): Readonly<TServerState> {
+        return this.state;
+    }
+
+    protected updateState(update: (state: TServerState) => void) {
+        update(this._state);
     }
 
     protected abstract get clients(): IterableIterator<string>;
 
-    protected abstract get state(): Readonly<TServerState>;
-
-    protected abstract updateState(update: (state: Draft<TServerState>) => void): void;
-
-    public receiveMessage(message: ServerWorkerMessageIn<TClientToServerCommand>) {
+    public receiveMessage(
+        message: ServerWorkerMessageIn<TClientToServerCommand>
+    ) {
         switch (message.type) {
             case ServerWorkerMessageInType.Join: {
                 const joinError = this.getJoinError(message.who);
@@ -37,12 +79,19 @@ export abstract class Server<
                     });
                     break;
                 }
-                
+
                 if (process.env.NODE_ENV === 'development') {
                     console.log(`${message.who} joined`);
                 }
 
-                this.addClient(message.who);
+                const substituteState = (newState: TClientState) =>
+                    this.substituteClientState(message.who, newState);
+
+                this.addClient(
+                    message.who,
+                    this.createClientState(message.who),
+                    substituteState
+                );
                 this.clientJoined(message.who);
                 break;
             }
@@ -53,6 +102,7 @@ export abstract class Server<
                 }
 
                 if (this.removeClient(message.who)) {
+                    this.removeClientState(message.who);
                     this.clientQuit(message.who);
                 }
                 break;
@@ -60,7 +110,10 @@ export abstract class Server<
 
             case ServerWorkerMessageInType.Command: {
                 if (process.env.NODE_ENV === 'development') {
-                    console.log(`${message.who} issued a command`, message.command);
+                    console.log(
+                        `${message.who} issued a command`,
+                        message.command
+                    );
                 }
                 this.receiveCommandFromClient(message.who, message.command);
                 break;
@@ -72,7 +125,9 @@ export abstract class Server<
         }
     }
 
-    protected abstract updateClientState(client: string, clientState: Partial<Draft<TClientState>>, prevServerState: TServerState | null, serverState: TServerState): void;
+    protected abstract mapClientState(
+        client: string
+    ): FieldMappings<TServerState, TClientState>;
 
     protected abstract isNameInUse(name: string): boolean;
 
@@ -88,17 +143,27 @@ export abstract class Server<
         return null;
     }
 
-    protected abstract addClient(client: string): void;
+    protected abstract addClient(
+        client: string,
+        state: TClientState,
+        substituteState: (newState: TClientState) => void
+    ): void;
 
     protected abstract removeClient(client: string): boolean;
 
-    protected clientJoined(client: string) {  }
+    protected clientJoined(client: string) {}
 
-    protected clientQuit(client: string) {  }
+    protected clientQuit(client: string) {}
 
-    protected abstract receiveCommandFromClient(client: string, command: TClientToServerCommand): void;
+    protected abstract receiveCommandFromClient(
+        client: string,
+        command: TClientToServerCommand
+    ): void;
 
-    protected sendCommand(client: string | undefined, command: TServerToClientCommand) {
+    protected sendCommand(
+        client: string | undefined,
+        command: TServerToClientCommand
+    ) {
         this.sendMessage({
             type: ServerWorkerMessageOutType.Command,
             who: client,

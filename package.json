@@ -1,7 +1,7 @@
 {
   "name": "peer-server",
   "version": "1.0.0",
-  "description": "Library for browser-based multiplayer games, based on peerjs",
+  "description": "A library for peer-to-peer multiplayer games",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
   "scripts": {
@@ -33,6 +33,7 @@
     "worker-loader": "^2.0.0"
   },
   "dependencies": {
+    "filter-mirror": "git+https://github.com/FTWinston/filter-mirror.git",
     "immer": "^6.0.5"
   },
   "repository": {
