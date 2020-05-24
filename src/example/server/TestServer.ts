@@ -40,20 +40,14 @@ export class TestServer extends SimulatingServer<
         };
 
         this.updateState((state) => {
-            state.players = {
-                ...state.players,
-                [name]: player,
-            };
-        });
+            state.players[name] = player;
+        })
     }
 
     protected clientQuit(name: string) {
         console.log(`${name} disconnected`);
 
         this.updateState((state) => {
-            state.players = {
-                ...state.players,
-            };
             delete state.players[name];
         });
     }

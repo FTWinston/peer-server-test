@@ -43,11 +43,11 @@ export abstract class Server<
         this.substituteClientState = substituteMirror;
     }
 
-    private createClientState: (client: string) => TClientState;
+    private readonly createClientState: (client: string) => TClientState;
 
-    private removeClientState: (client: string) => void;
+    private readonly removeClientState: (client: string) => void;
 
-    protected substituteClientState: (
+    protected readonly substituteClientState: (
         client: string,
         state: TClientState
     ) => void;

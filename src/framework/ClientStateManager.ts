@@ -31,7 +31,7 @@ export class ClientStateManager<TClientState, TServerToClientCommand> {
         this.updateDraft();
     }
 
-    private draftState: Draft<TClientState> | undefined;
+    private draftState: Draft<TClientState>;
 
     private updateDraft() {
         this.draftState = createDraft(this.state);
