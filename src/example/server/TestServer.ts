@@ -16,7 +16,7 @@ export class TestServer extends SimulatingServer<
 > {
     constructor(
         sendMessage: (
-            message: ServerWorkerMessageOut<ServerToClientCommand, ServerState>
+            message: ServerWorkerMessageOut<ServerToClientCommand>
         ) => void
     ) {
         super(
@@ -41,7 +41,7 @@ export class TestServer extends SimulatingServer<
 
         this.updateState((state) => {
             state.players[name] = player;
-        })
+        });
     }
 
     protected clientQuit(name: string) {

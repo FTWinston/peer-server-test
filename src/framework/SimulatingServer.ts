@@ -28,10 +28,7 @@ export abstract class SimulatingServer<
     constructor(
         initialState: TServerState,
         sendMessage: (
-            message: ServerWorkerMessageOut<
-                TServerToClientCommand,
-                TClientState
-            >
+            message: ServerWorkerMessageOut<TServerToClientCommand>
         ) => void,
         private readonly tickInterval: number
     ) {
@@ -65,7 +62,9 @@ export abstract class SimulatingServer<
 
     protected createClient(
         client: string,
-        createState: (patchCallback: (patch: PatchOperation) => void) => TClientState,
+        createState: (
+            patchCallback: (patch: PatchOperation) => void
+        ) => TClientState
     ) {
         // Now that client has established a reliable connection, instruct them
         // to also connect unreliably, for use with sending state updates every tick.
@@ -75,11 +74,10 @@ export abstract class SimulatingServer<
             operation: 'simulate',
         });
 
-        const clientManager = new UnreliableClientStateManager<TClientState, TServerToClientCommand>(
-            client,
-            createState,
-            this.sendMessage,
-        );
+        const clientManager = new UnreliableClientStateManager<
+            TClientState,
+            TServerToClientCommand
+        >(client, createState, this.sendMessage);
 
         return clientManager;
     }

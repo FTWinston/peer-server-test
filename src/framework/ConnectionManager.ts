@@ -23,7 +23,7 @@ export class ConnectionManager<
     private signal: ServerSignalConnection;
     private readonly clients = new Map<
         string,
-        IClientConnection<TServerToClientCommand, TClientState>
+        IClientConnection<TServerToClientCommand>
     >();
 
     constructor(
@@ -32,7 +32,7 @@ export class ConnectionManager<
         ) => void,
         ready: (sessionID: string) => void,
         signalSettings: IConnectionSettings,
-        localClient?: IClientConnection<TServerToClientCommand, TClientState>
+        localClient?: IClientConnection<TServerToClientCommand>
     ) {
         this.signal = new ServerSignalConnection(
             signalSettings,
@@ -88,7 +88,7 @@ export class ConnectionManager<
 
     // This doesn't apply to local client, that's handled in LocalServerConnection
     private clientConnected(
-        client: IClientConnection<TServerToClientCommand, TClientState>
+        client: IClientConnection<TServerToClientCommand>
     ) {
         this.sendToServer({
             type: ServerWorkerMessageInType.Join,
@@ -98,7 +98,7 @@ export class ConnectionManager<
 
     // This doesn't apply to local client, that's handled in LocalServerConnection
     private clientDisconnected(
-        client: IClientConnection<TServerToClientCommand, TClientState>
+        client: IClientConnection<TServerToClientCommand>
     ) {
         this.sendToServer({
             type: ServerWorkerMessageInType.Quit,
@@ -110,7 +110,7 @@ export class ConnectionManager<
 
     // This doesn't apply to local client, that's handled in LocalServerConnection
     private clientAcknowledged(
-        client: IClientConnection<TServerToClientCommand, TClientState>,
+        client: IClientConnection<TServerToClientCommand>,
         time: number
     ) {
         this.sendToServer({
@@ -122,7 +122,7 @@ export class ConnectionManager<
 
     // This doesn't apply to local client, that's handled in LocalServerConnection
     private clientCommand(
-        client: IClientConnection<TServerToClientCommand, TClientState>,
+        client: IClientConnection<TServerToClientCommand>,
         command: TClientToServerCommand
     ) {
         this.sendToServer({
@@ -134,7 +134,7 @@ export class ConnectionManager<
 
     public sendToClient(
         client: string | undefined,
-        message: ServerToClientMessage<TServerToClientCommand, TClientState>
+        message: ServerToClientMessage<TServerToClientCommand>
     ) {
         if (client === undefined) {
             for (const conn of this.clients.values()) {

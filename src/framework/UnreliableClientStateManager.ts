@@ -14,13 +14,12 @@ export class UnreliableClientStateManager<
 
     public constructor(
         name: string,
-        getInitialState: (callback: (patch: PatchOperation) => void) => TClientState,
+        getInitialState: (
+            callback: (patch: PatchOperation) => void
+        ) => TClientState,
         sendMessage: (
-            message: ServerWorkerMessageOut<
-                TServerToClientCommand,
-                TClientState
-            >
-        ) => void,
+            message: ServerWorkerMessageOut<TServerToClientCommand>
+        ) => void
     ) {
         super(name, getInitialState, sendMessage);
     }
@@ -34,7 +33,10 @@ export class UnreliableClientStateManager<
     }
 
     protected shouldSendFullState(time: number) {
-        return super.shouldSendFullState(time) || this.lastAcknowledgedTime <= time - unacknowledgedDeltaInterval;
+        return (
+            super.shouldSendFullState(time) ||
+            this.lastAcknowledgedTime <= time - unacknowledgedDeltaInterval
+        );
     }
 
     protected sendFullState(time: number, state: TClientState) {

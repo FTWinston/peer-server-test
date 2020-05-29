@@ -8,8 +8,8 @@ export const controlMessageIdentifier = 'x';
 
 export type ControlOperation = 'simulate';
 
-export type ServerToClientMessage<TServerToClientCommand, TClientState> =
-    | ['s', TClientState, number]
+export type ServerToClientMessage<TServerToClientCommand> =
+    | ['s', string, number]
     | ['d', PatchOperation[], number]
     | ['c', TServerToClientCommand]
     | ['e', string]

@@ -7,15 +7,14 @@ import { PatchOperation } from 'filter-mirror';
 export class ClientStateManager<TClientState, TServerToClientCommand> {
     public constructor(
         public readonly name: string,
-        getInitialState: (callback: (patch: PatchOperation) => void) => TClientState,
+        getInitialState: (
+            callback: (patch: PatchOperation) => void
+        ) => TClientState,
         private readonly sendMessage: (
-            message: ServerWorkerMessageOut<
-                TServerToClientCommand,
-                TClientState
-            >
+            message: ServerWorkerMessageOut<TServerToClientCommand>
         ) => void
     ) {
-        this.state = getInitialState(patch => this.patches.push(patch));
+        this.state = getInitialState((patch) => this.patches.push(patch));
     }
 
     private state: TClientState;
@@ -49,7 +48,7 @@ export class ClientStateManager<TClientState, TServerToClientCommand> {
             type: ServerWorkerMessageOutType.FullState,
             who: this.name,
             time,
-            state,
+            state: JSON.stringify(state),
         });
     }
 
@@ -65,6 +64,5 @@ export class ClientStateManager<TClientState, TServerToClientCommand> {
             time,
             state: patches,
         });
-        
     }
 }

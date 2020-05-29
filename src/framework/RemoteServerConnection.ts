@@ -81,14 +81,11 @@ export class RemoteServerConnection<
                 this.reliable.onmessage = (event) => {
                     const data = JSON.parse(
                         event.data
-                    ) as ServerToClientMessage<
-                        TServerToClientCommand,
-                        TClientState
-                    >;
+                    ) as ServerToClientMessage<TServerToClientCommand>;
 
                     switch (data[0]) {
                         case fullStateMessageIdentifier:
-                            this.receiveFullState(data[1]);
+                            this.receiveFullState(JSON.parse(data[1]));
                             break;
 
                         case deltaStateMessageIdentifier:
@@ -120,14 +117,11 @@ export class RemoteServerConnection<
                 this.unreliable.onmessage = (event) => {
                     const data = JSON.parse(
                         event.data
-                    ) as ServerToClientMessage<
-                        TServerToClientCommand,
-                        TClientState
-                    >;
+                    ) as ServerToClientMessage<TServerToClientCommand>;
                     switch (data[0]) {
                         case fullStateMessageIdentifier:
                             this.sendAcknowledgement(data[2]);
-                            this.receiveFullState(data[1]);
+                            this.receiveFullState(JSON.parse(data[1]));
                             break;
 
                         case deltaStateMessageIdentifier:

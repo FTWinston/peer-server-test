@@ -43,7 +43,7 @@ export class LocalServerConnection<
         TClientState,
         TLocalState
     >
-    implements IClientConnection<TServerToClientCommand, TClientState> {
+    implements IClientConnection<TServerToClientCommand> {
     private clients: ConnectionManager<
         TClientToServerCommand,
         TServerToClientCommand,
@@ -91,7 +91,7 @@ export class LocalServerConnection<
     }
 
     send(
-        message: ServerToClientMessage<TServerToClientCommand, TClientState>
+        message: ServerToClientMessage<TServerToClientCommand>
     ): void {
         // TODO: can we avoid having this AND separate dispatch operations?
 
@@ -125,7 +125,7 @@ export class LocalServerConnection<
 
     protected dispatchFullStateFromServer(
         client: string,
-        state: TClientState,
+        state: string,
         time: number
     ) {
         this.clients.sendToClient(client, [

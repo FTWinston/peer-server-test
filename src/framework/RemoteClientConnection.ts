@@ -15,7 +15,7 @@ export class RemoteClientConnection<
     TClientToServerCommand,
     TServerToClientCommand,
     TClientState
-> implements IClientConnection<TServerToClientCommand, TClientState> {
+> implements IClientConnection<TServerToClientCommand> {
     private readonly reliable: RTCDataChannel;
     private unreliable?: RTCDataChannel;
 
@@ -76,7 +76,7 @@ export class RemoteClientConnection<
     }
 
     send(
-        message: ServerToClientMessage<TServerToClientCommand, TClientState>
+        message: ServerToClientMessage<TServerToClientCommand>
     ): void {
         if (message[0] === controlMessageIdentifier) {
             if (message[1] === 'simulate' && this.unreliable === undefined) {

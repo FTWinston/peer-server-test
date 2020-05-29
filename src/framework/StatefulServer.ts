@@ -18,10 +18,7 @@ export abstract class StatefulServer<
     constructor(
         initialState: TServerState,
         protected readonly sendMessage: (
-            message: ServerWorkerMessageOut<
-                TServerToClientCommand,
-                TClientState
-            >
+            message: ServerWorkerMessageOut<TServerToClientCommand>
         ) => void
     ) {
         super(initialState, sendMessage);
@@ -29,13 +26,14 @@ export abstract class StatefulServer<
 
     protected createClient(
         client: string,
-        createState: (patchCallback: (patch: PatchOperation) => void) => TClientState,
+        createState: (
+            patchCallback: (patch: PatchOperation) => void
+        ) => TClientState
     ) {
-        const clientManager = new ClientStateManager<TClientState, TServerToClientCommand>(
-            client,
-            createState,
-            this.sendMessage,
-        );
+        const clientManager = new ClientStateManager<
+            TClientState,
+            TServerToClientCommand
+        >(client, createState, this.sendMessage);
 
         const time = Math.round(performance.now());
         clientManager.sendState(time);

@@ -10,12 +10,12 @@ export const enum ServerWorkerMessageOutType {
     Control,
 }
 
-export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> =
+export type ServerWorkerMessageOut<TServerToClientCommand> =
     | {
           type: ServerWorkerMessageOutType.FullState;
           who: string;
           time: number;
-          state: TClientState;
+          state: string;
       }
     | {
           type: ServerWorkerMessageOutType.DeltaState;

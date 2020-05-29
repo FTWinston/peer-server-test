@@ -14,36 +14,36 @@ export abstract class Server<
     TClientState extends {},
     TClientToServerCommand,
     TServerToClientCommand,
-    TClientStateManager extends ClientStateManager<TClientState, TServerToClientCommand>,
+    TClientStateManager extends ClientStateManager<
+        TClientState,
+        TServerToClientCommand
+    >
 > {
     constructor(
         initialState: TServerState,
         protected readonly sendMessage: (
-            message: ServerWorkerMessageOut<
-                TServerToClientCommand,
-                TClientState
-            >
+            message: ServerWorkerMessageOut<TServerToClientCommand>
         ) => void
     ) {
         sendMessage({
             type: ServerWorkerMessageOutType.Ready,
         });
 
-        const {
-            proxy,
-            createMirror,
-            removeMirror,
-        } = multiFilter<TServerState, TClientState, string>(
-            initialState,
-            (client) => this.mapClientState(client)
-        );
+        const { proxy, createMirror, removeMirror } = multiFilter<
+            TServerState,
+            TClientState,
+            string
+        >(initialState, (client) => this.mapClientState(client));
 
         this._state = proxy;
         this.createClientState = createMirror;
         this.removeClientState = removeMirror;
     }
 
-    private readonly createClientState: (client: string, patchCallback: (patch: PatchOperation) => void) => TClientState;
+    private readonly createClientState: (
+        client: string,
+        patchCallback: (patch: PatchOperation) => void
+    ) => TClientState;
 
     private readonly removeClientState: (client: string) => void;
 
@@ -90,7 +90,9 @@ export abstract class Server<
                     console.log(`${client} joined`);
                 }
 
-                const clientManager = this.createClient(client, (callback => this.createClientState(client, callback)));
+                const clientManager = this.createClient(client, (callback) =>
+                    this.createClientState(client, callback)
+                );
                 this._clients.set(client, clientManager);
 
                 this.clientJoined(client);
@@ -145,7 +147,9 @@ export abstract class Server<
 
     protected abstract createClient(
         client: string,
-        createState: (patchCallback: (patch: PatchOperation) => void) => TClientState,
+        createState: (
+            patchCallback: (patch: PatchOperation) => void
+        ) => TClientState
     ): TClientStateManager;
 
     protected removeClient(name: string) {

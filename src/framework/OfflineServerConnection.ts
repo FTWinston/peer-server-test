@@ -52,7 +52,7 @@ export class OfflineServerConnection<
     private ready?: () => void;
 
     private receiveMessageFromServer(
-        message: ServerWorkerMessageOut<TServerToClientCommand, TClientState>
+        message: ServerWorkerMessageOut<TServerToClientCommand>
     ) {
         switch (message.type) {
             case ServerWorkerMessageOutType.Command:
@@ -110,7 +110,7 @@ export class OfflineServerConnection<
 
     protected dispatchFullStateFromServer(
         client: string,
-        state: TClientState,
+        state: string,
         time: number
     ) {
         this.sendMessageToServer({
@@ -119,7 +119,7 @@ export class OfflineServerConnection<
             time: time,
         });
 
-        this.receiveFullState(state);
+        this.receiveFullState(JSON.parse(state));
     }
 
     protected dispatchDeltaStateFromServer(
