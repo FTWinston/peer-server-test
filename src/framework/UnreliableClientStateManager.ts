@@ -1,6 +1,6 @@
 import { ServerWorkerMessageOut } from './ServerWorkerMessageOut';
 import { ClientStateManager } from './ClientStateManager';
-import { Draft, Patch } from 'immer';
+import { PatchOperation } from 'filter-mirror';
 
 const unacknowledgedDeltaInterval = 1000; // If we go for this may milliseconds with no acknowledgements, we give up on deltas and start sending full states
 
@@ -10,20 +10,19 @@ export class UnreliableClientStateManager<
 > extends ClientStateManager<TClientState, TServerToClientCommand> {
     public lastAcknowledgedTime?: number;
 
-    private readonly unacknowledgedDeltas = new Map<number, Patch[]>();
+    private readonly unacknowledgedDeltas = new Map<number, PatchOperation[]>();
 
     public constructor(
         name: string,
-        state: TClientState,
+        getInitialState: (callback: (patch: PatchOperation) => void) => TClientState,
         sendMessage: (
             message: ServerWorkerMessageOut<
                 TServerToClientCommand,
                 TClientState
             >
         ) => void,
-        registerProxy: (newState: TClientState | Draft<TClientState>) => void
     ) {
-        super(name, state, sendMessage, registerProxy);
+        super(name, getInitialState, sendMessage);
     }
 
     public acknowledge(time: number) {
@@ -35,7 +34,7 @@ export class UnreliableClientStateManager<
     }
 
     protected shouldSendFullState(time: number) {
-        return this.lastAcknowledgedTime <= time - unacknowledgedDeltaInterval;
+        return super.shouldSendFullState(time) || this.lastAcknowledgedTime <= time - unacknowledgedDeltaInterval;
     }
 
     protected sendFullState(time: number, state: TClientState) {
@@ -45,7 +44,7 @@ export class UnreliableClientStateManager<
         super.sendFullState(time, state);
     }
 
-    protected sendStateUpdate(time: number, patches: Patch[]) {
+    protected sendStateUpdate(time: number, patches: PatchOperation[]) {
         this.unacknowledgedDeltas.set(time, patches);
 
         const cumulativeDelta = this.combineUnacknowledgedDeltas(); // TODO: could we cache this?
@@ -54,7 +53,7 @@ export class UnreliableClientStateManager<
     }
 
     private combineUnacknowledgedDeltas() {
-        let cumulativeDelta: Patch[] = [];
+        let cumulativeDelta: PatchOperation[] = [];
 
         for (const [, delta] of this.unacknowledgedDeltas) {
             cumulativeDelta = [...cumulativeDelta, ...delta];

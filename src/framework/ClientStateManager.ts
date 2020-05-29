@@ -2,63 +2,49 @@ import {
     ServerWorkerMessageOut,
     ServerWorkerMessageOutType,
 } from './ServerWorkerMessageOut';
-import {
-    Draft,
-    createDraft,
-    finishDraft,
-    Patch,
-    enablePatches,
-    setAutoFreeze,
-} from 'immer';
-
-enablePatches();
-setAutoFreeze(false); // Perhaps immer isn't the best fit if we just use it for patch generation.
+import { PatchOperation } from 'filter-mirror';
 
 export class ClientStateManager<TClientState, TServerToClientCommand> {
     public constructor(
         public readonly name: string,
-        private state: TClientState,
+        getInitialState: (callback: (patch: PatchOperation) => void) => TClientState,
         private readonly sendMessage: (
             message: ServerWorkerMessageOut<
                 TServerToClientCommand,
                 TClientState
             >
-        ) => void,
-        protected readonly registerProxy: (
-            newState: TClientState | Draft<TClientState>
         ) => void
     ) {
-        this.updateDraft();
+        this.state = getInitialState(patch => this.patches.push(patch));
     }
 
-    private draftState: Draft<TClientState>;
+    private state: TClientState;
 
-    private updateDraft() {
-        this.draftState = createDraft(this.state);
+    private patches: PatchOperation[] = [];
 
-        this.registerProxy(this.draftState);
+    public receiveChange(patch: PatchOperation) {
+        this.patches.push(patch);
     }
 
     public sendState(time: number) {
-        if (this.draftState === undefined) {
+        if (this.shouldSendFullState(time)) {
             this.sendFullState(time, this.state);
-        } else if (this.shouldSendFullState(time)) {
-            this.state = finishDraft(this.draftState);
-            this.sendFullState(time, this.state);
+            this.forceSendFullState = false;
+            this.patches = [];
         } else {
-            this.state = finishDraft(this.draftState, (patches) => {
-                this.sendStateUpdate(time, patches);
-            });
+            this.sendStateUpdate(time, this.patches);
+            this.patches = [];
         }
-
-        this.updateDraft();
     }
 
+    private forceSendFullState = true;
+
     protected shouldSendFullState(time: number) {
-        return false;
+        return this.forceSendFullState;
     }
 
     protected sendFullState(time: number, state: TClientState) {
+        console.log(`sending full state to ${this.name}: `, state);
         this.sendMessage({
             type: ServerWorkerMessageOutType.FullState,
             who: this.name,
@@ -67,12 +53,18 @@ export class ClientStateManager<TClientState, TServerToClientCommand> {
         });
     }
 
-    protected sendStateUpdate(time: number, patches: Patch[]) {
+    protected sendStateUpdate(time: number, patches: PatchOperation[]) {
+        if (patches.length === 0) {
+            return;
+        }
+
+        console.log(`sending state patch to ${this.name}: `, patches);
         this.sendMessage({
             type: ServerWorkerMessageOutType.DeltaState,
             who: this.name,
             time,
             state: patches,
         });
+        
     }
 }

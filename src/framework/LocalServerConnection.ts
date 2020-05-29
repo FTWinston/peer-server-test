@@ -15,7 +15,7 @@ import {
 import { ConnectionManager } from './ConnectionManager';
 import { IClientConnection } from './IClientConnection';
 import { IConnectionSettings } from './SignalConnection';
-import { Patch } from 'immer';
+import { PatchOperation } from 'filter-mirror';
 
 export interface LocalConnectionParameters<
     TServerToClientCommand,
@@ -137,7 +137,7 @@ export class LocalServerConnection<
 
     protected dispatchDeltaStateFromServer(
         client: string,
-        state: Patch[],
+        state: PatchOperation[],
         time: number
     ) {
         this.clients.sendToClient(client, [

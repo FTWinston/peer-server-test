@@ -8,7 +8,7 @@ import {
     ServerWorkerMessageOutType,
 } from './ServerWorkerMessageOut';
 import { ControlOperation } from './ServerToClientMessage';
-import { Patch } from 'immer';
+import { PatchOperation } from 'filter-mirror';
 
 export interface OfflineConnectionParameters<
     TServerToClientCommand,
@@ -124,7 +124,7 @@ export class OfflineServerConnection<
 
     protected dispatchDeltaStateFromServer(
         client: string,
-        state: Patch[],
+        state: PatchOperation[],
         time: number
     ) {
         this.sendMessageToServer({

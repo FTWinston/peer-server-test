@@ -8,6 +8,7 @@ import {
     ServerWorkerMessageInType,
 } from './ServerWorkerMessageIn';
 import { UnreliableClientStateManager } from './UnreliableClientStateManager';
+import { PatchOperation } from 'filter-mirror';
 
 export abstract class SimulatingServer<
     TServerState extends {},
@@ -18,13 +19,9 @@ export abstract class SimulatingServer<
     TServerState,
     TClientState,
     TClientToServerCommand,
-    TServerToClientCommand
+    TServerToClientCommand,
+    UnreliableClientStateManager<TClientState, TServerToClientCommand>
 > {
-    private readonly _clients = new Map<
-        string,
-        UnreliableClientStateManager<TClientState, TServerToClientCommand>
-    >();
-
     private tickTimer: NodeJS.Timeout | undefined;
     private lastTickTime: number;
 
@@ -41,10 +38,6 @@ export abstract class SimulatingServer<
         super(initialState, sendMessage);
 
         this.resume();
-    }
-
-    public get clients() {
-        return this._clients.keys();
     }
 
     // TODO: status? e.g. not started, active, paused, finished
@@ -70,14 +63,9 @@ export abstract class SimulatingServer<
         this.tickTimer = setInterval(() => this.tick(), this.tickInterval);
     }
 
-    protected isNameInUse(name: string) {
-        return this._clients.has(name);
-    }
-
-    protected addClient(
+    protected createClient(
         client: string,
-        state: TClientState,
-        substituteState: (newState: TClientState) => void
+        createState: (patchCallback: (patch: PatchOperation) => void) => TClientState,
     ) {
         // Now that client has established a reliable connection, instruct them
         // to also connect unreliably, for use with sending state updates every tick.
@@ -87,17 +75,13 @@ export abstract class SimulatingServer<
             operation: 'simulate',
         });
 
-        this._clients.set(
+        const clientManager = new UnreliableClientStateManager<TClientState, TServerToClientCommand>(
             client,
-            new UnreliableClientStateManager<
-                TClientState,
-                TServerToClientCommand
-            >(client, state, this.sendMessage, substituteState)
+            createState,
+            this.sendMessage,
         );
-    }
 
-    protected removeClient(client: string) {
-        return this._clients.delete(client);
+        return clientManager;
     }
 
     public receiveMessage(
@@ -105,7 +89,7 @@ export abstract class SimulatingServer<
     ) {
         switch (message.type) {
             case ServerWorkerMessageInType.Acknowledge:
-                const client = this._clients.get(message.who);
+                const client = this.clients.get(message.who);
                 client?.acknowledge(message.time);
                 break;
 
@@ -123,7 +107,7 @@ export abstract class SimulatingServer<
         this.simulateTick(tickDuration);
 
         const sendTime = Math.round(tickStart);
-        for (const [_, stateManager] of this._clients) {
+        for (const [_, stateManager] of this.clients) {
             stateManager.sendState(sendTime);
         }
     }

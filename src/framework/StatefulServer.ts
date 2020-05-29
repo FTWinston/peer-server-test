@@ -1,6 +1,7 @@
 import { ServerWorkerMessageOut } from './ServerWorkerMessageOut';
 import { Server } from './Server';
 import { ClientStateManager } from './ClientStateManager';
+import { PatchOperation } from 'filter-mirror';
 
 export abstract class StatefulServer<
     TServerState extends {},
@@ -11,13 +12,9 @@ export abstract class StatefulServer<
     TServerState,
     TClientState,
     TClientToServerCommand,
-    TServerToClientCommand
+    TServerToClientCommand,
+    ClientStateManager<TClientState, TServerToClientCommand>
 > {
-    private readonly _clients = new Map<
-        string,
-        ClientStateManager<TClientState, TServerToClientCommand>
-    >();
-
     constructor(
         initialState: TServerState,
         protected readonly sendMessage: (
@@ -30,35 +27,20 @@ export abstract class StatefulServer<
         super(initialState, sendMessage);
     }
 
-    public get clients() {
-        return this._clients.keys();
-    }
-
-    protected isNameInUse(name: string) {
-        return this._clients.has(name);
-    }
-
-    protected addClient(
+    protected createClient(
         client: string,
-        state: TClientState,
-        substituteState: (newState: TClientState) => void
+        createState: (patchCallback: (patch: PatchOperation) => void) => TClientState,
     ) {
-        this._clients.set(
+        const clientManager = new ClientStateManager<TClientState, TServerToClientCommand>(
             client,
-            new ClientStateManager<TClientState, TServerToClientCommand>(
-                client,
-                state,
-                this.sendMessage,
-                substituteState
-            )
+            createState,
+            this.sendMessage,
         );
 
         const time = Math.round(performance.now());
-        this._clients.get(client)?.sendState(time);
-    }
+        clientManager.sendState(time);
 
-    protected removeClient(name: string) {
-        return this._clients.delete(name);
+        return clientManager;
     }
 
     protected updateState(update: (state: TServerState) => void) {
@@ -66,7 +48,7 @@ export abstract class StatefulServer<
 
         const time = Math.round(performance.now());
 
-        for (const [_, stateManager] of this._clients) {
+        for (const [_, stateManager] of this.clients) {
             stateManager.sendState(time);
         }
     }

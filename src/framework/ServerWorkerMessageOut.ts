@@ -1,5 +1,5 @@
 import { ControlOperation } from './ServerToClientMessage';
-import { Patch } from 'immer';
+import { PatchOperation } from 'filter-mirror';
 
 export const enum ServerWorkerMessageOutType {
     Ready,
@@ -21,7 +21,7 @@ export type ServerWorkerMessageOut<TServerToClientCommand, TClientState> =
           type: ServerWorkerMessageOutType.DeltaState;
           who: string;
           time: number;
-          state: Patch[];
+          state: PatchOperation[];
       }
     | {
           type: ServerWorkerMessageOutType.Command;

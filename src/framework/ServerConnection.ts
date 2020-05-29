@@ -1,6 +1,5 @@
-import { enablePatches, applyPatches, Patch } from 'immer';
-
-enablePatches();
+import { PatchOperation } from 'filter-mirror';
+import { applyPatch } from './applyPatch';
 
 export interface ConnectionMetadata {
     name: string;
@@ -62,13 +61,13 @@ export abstract class ServerConnection<
         }
     }
 
-    protected receiveDeltaState(delta: Patch[]) {
+    protected receiveDeltaState(delta: PatchOperation[]) {
         if (!delta) {
             return;
         }
 
         const prevState = this._clientState;
-        const newState = applyPatches(prevState, delta);
+        const newState = applyPatch(prevState, delta);
 
         if (newState !== prevState && this.clientStateChanged) {
             this._clientState = newState;

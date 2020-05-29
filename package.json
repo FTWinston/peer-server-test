@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "filter-mirror": "git+https://github.com/FTWinston/filter-mirror.git",
-    "immer": "^6.0.5"
+    "jsonpatch": "^3.0.1"
   },
   "repository": {
     "type": "git",

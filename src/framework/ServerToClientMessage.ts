@@ -1,4 +1,4 @@
-import { Patch } from 'immer';
+import { PatchOperation } from 'filter-mirror';
 
 export const commandMessageIdentifier = 'c';
 export const fullStateMessageIdentifier = 's';
@@ -10,7 +10,7 @@ export type ControlOperation = 'simulate';
 
 export type ServerToClientMessage<TServerToClientCommand, TClientState> =
     | ['s', TClientState, number]
-    | ['d', Patch[], number]
+    | ['d', PatchOperation[], number]
     | ['c', TServerToClientCommand]
     | ['e', string]
     | ['x', ControlOperation];

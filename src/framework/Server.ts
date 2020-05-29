@@ -6,13 +6,15 @@ import {
     ServerWorkerMessageOut,
     ServerWorkerMessageOutType,
 } from './ServerWorkerMessageOut';
-import { FieldMappings, multiFilter } from 'filter-mirror';
+import { FieldMappings, multiFilter, PatchOperation } from 'filter-mirror';
+import { ClientStateManager } from './ClientStateManager';
 
 export abstract class Server<
     TServerState extends {},
     TClientState extends {},
     TClientToServerCommand,
-    TServerToClientCommand
+    TServerToClientCommand,
+    TClientStateManager extends ClientStateManager<TClientState, TServerToClientCommand>,
 > {
     constructor(
         initialState: TServerState,
@@ -31,7 +33,6 @@ export abstract class Server<
             proxy,
             createMirror,
             removeMirror,
-            substituteMirror,
         } = multiFilter<TServerState, TClientState, string>(
             initialState,
             (client) => this.mapClientState(client)
@@ -40,10 +41,9 @@ export abstract class Server<
         this._state = proxy;
         this.createClientState = createMirror;
         this.removeClientState = removeMirror;
-        this.substituteClientState = substituteMirror;
     }
 
-    private readonly createClientState: (client: string) => TClientState;
+    private readonly createClientState: (client: string, patchCallback: (patch: PatchOperation) => void) => TClientState;
 
     private readonly removeClientState: (client: string) => void;
 
@@ -55,14 +55,18 @@ export abstract class Server<
     private _state: TServerState;
 
     public get state(): Readonly<TServerState> {
-        return this.state;
+        return this._state;
     }
 
     protected updateState(update: (state: TServerState) => void) {
         update(this._state);
     }
 
-    protected abstract get clients(): IterableIterator<string>;
+    private readonly _clients = new Map<string, TClientStateManager>();
+
+    public get clients(): ReadonlyMap<string, TClientStateManager> {
+        return this._clients;
+    }
 
     public receiveMessage(
         message: ServerWorkerMessageIn<TClientToServerCommand>
@@ -86,14 +90,9 @@ export abstract class Server<
                     console.log(`${client} joined`);
                 }
 
-                const substituteState = (newState: TClientState) =>
-                    this.substituteClientState(client, newState);
+                const clientManager = this.createClient(client, (callback => this.createClientState(client, callback)));
+                this._clients.set(client, clientManager);
 
-                this.addClient(
-                    client,
-                    this.createClientState(client),
-                    substituteState
-                );
                 this.clientJoined(client);
                 break;
             }
@@ -128,7 +127,9 @@ export abstract class Server<
         client: string
     ): FieldMappings<TServerState, TClientState>;
 
-    protected abstract isNameInUse(name: string): boolean;
+    protected isNameInUse(name: string) {
+        return this.clients.has(name);
+    }
 
     protected getJoinError(clientName: string): string | null {
         if (clientName.length > 50) {
@@ -142,13 +143,14 @@ export abstract class Server<
         return null;
     }
 
-    protected abstract addClient(
+    protected abstract createClient(
         client: string,
-        state: TClientState,
-        substituteState: (newState: TClientState) => void
-    ): void;
+        createState: (patchCallback: (patch: PatchOperation) => void) => TClientState,
+    ): TClientStateManager;
 
-    protected abstract removeClient(client: string): boolean;
+    protected removeClient(name: string) {
+        return this._clients.delete(name);
+    }
 
     protected clientJoined(client: string) {}
 
