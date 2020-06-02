@@ -90,9 +90,7 @@ export class LocalServerConnection<
         // Don't send a join message right away. This will instead be sent once the peer is initialized.
     }
 
-    send(
-        message: ServerToClientMessage<TServerToClientCommand>
-    ): void {
+    send(message: ServerToClientMessage<TServerToClientCommand>): void {
         // TODO: can we avoid having this AND separate dispatch operations?
 
         if (message[0] === 's') {

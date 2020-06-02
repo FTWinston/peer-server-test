@@ -87,9 +87,7 @@ export class ConnectionManager<
     }
 
     // This doesn't apply to local client, that's handled in LocalServerConnection
-    private clientConnected(
-        client: IClientConnection<TServerToClientCommand>
-    ) {
+    private clientConnected(client: IClientConnection<TServerToClientCommand>) {
         this.sendToServer({
             type: ServerWorkerMessageInType.Join,
             who: client.clientName,
