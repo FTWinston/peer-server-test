@@ -9,6 +9,10 @@ import {
 import { FieldMappings, multiFilter, PatchOperation } from 'filter-mirror';
 import { ClientStateManager } from './ClientStateManager';
 
+export type RecursiveReadonly<T> = {
+    readonly [P in keyof T]: RecursiveReadonly<T[P]>;
+}
+
 export abstract class Server<
     TServerState extends {},
     TClientState extends {},
@@ -54,7 +58,7 @@ export abstract class Server<
 
     private _state: TServerState;
 
-    public get state(): Readonly<TServerState> {
+    public get state(): RecursiveReadonly<TServerState> {
         return this._state;
     }
 

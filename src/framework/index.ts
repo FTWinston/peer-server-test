@@ -6,4 +6,5 @@ export { LocalServerConnection } from './LocalServerConnection';
 export { RemoteServerConnection } from './RemoteServerConnection';
 export { ServerWorkerMessageIn } from './ServerWorkerMessageIn';
 export { ServerWorkerMessageOut } from './ServerWorkerMessageOut';
-export { FieldMappings, PatchOperation, extraFields, anyOtherFields } from 'filter-mirror';
+export { FieldMappings, extraFields, anyOtherFields } from 'filter-mirror';
+export { RecursiveReadonly } from './Server';
