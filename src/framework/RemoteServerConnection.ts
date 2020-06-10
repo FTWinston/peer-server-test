@@ -20,7 +20,6 @@ export interface RemoteConnectionParameters<
         TClientState,
         TLocalState
     > {
-    initialClientState: TClientState;
     sessionId: string;
     clientName: string;
     signalSettings: IConnectionSettings;

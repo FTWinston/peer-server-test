@@ -29,6 +29,7 @@ export interface LocalConnectionParameters<
     > {
     signalSettings: IConnectionSettings;
     clientName: string;
+    ready: () => void;
 }
 
 export class LocalServerConnection<
@@ -56,8 +57,7 @@ export class LocalServerConnection<
             TServerToClientCommand,
             TClientState,
             TLocalState
-        >,
-        ready: () => void
+        >
     ) {
         super(params, () => {
             if (params.clientName.length < 1) {
@@ -76,7 +76,7 @@ export class LocalServerConnection<
                         who: params.clientName,
                     });
 
-                    ready();
+                    params.ready();
                 },
                 params.signalSettings,
                 this
