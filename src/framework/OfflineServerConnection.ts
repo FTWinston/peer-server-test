@@ -167,4 +167,8 @@ export class OfflineServerConnection<
     get localId() {
         return 'local';
     }
+    
+    get sessionId() {
+        return '';
+    }
 }

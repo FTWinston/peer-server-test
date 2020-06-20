@@ -60,7 +60,9 @@ export class RemoteServerConnection<
             params.clientName,
             (peer) => {
                 this.peer = peer;
-                console.log(`connected to server ${params.sessionId}`);
+                console.log(`connected to session ${params.sessionId}`);
+                this._sessionId = params.sessionId;
+
                 this.setupPeer(params.ready);
             },
             () => {
@@ -163,4 +165,10 @@ export class RemoteServerConnection<
     get localId() {
         return this.clientName;
     }
+    
+    get sessionId() {
+        return this._sessionId;
+    }
+
+    private _sessionId: string = '';
 }

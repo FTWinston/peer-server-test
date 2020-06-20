@@ -80,4 +80,6 @@ export abstract class ServerConnection<
     abstract disconnect(): void;
 
     abstract get localId(): string;
+
+    abstract get sessionId(): string;
 }

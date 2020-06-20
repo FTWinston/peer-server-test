@@ -68,8 +68,9 @@ export class LocalServerConnection<
 
             this.clients = new ConnectionManager(
                 (message) => this.sendMessageToServer(message),
-                (sessionID) => {
-                    console.log(`Session ID is ${sessionID}`); // TODO: expose the session ID somewhere!
+                (sessionId) => {
+                    console.log(`Session ID is ${sessionId}`);
+                    this._sessionId = sessionId;
 
                     this.sendMessageToServer({
                         type: ServerWorkerMessageInType.Join,
@@ -169,4 +170,10 @@ export class LocalServerConnection<
     get localId() {
         return this.clientName;
     }
+
+    get sessionId() {
+        return this._sessionId;
+    }
+
+    private _sessionId: string = '';
 }
