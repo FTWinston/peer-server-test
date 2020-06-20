@@ -94,12 +94,13 @@ export abstract class Server<
                     console.log(`${client} joined`);
                 }
 
+                this.clientJoined(client);
+                
                 const clientManager = this.createClient(client, (callback) =>
                     this.createClientState(client, callback)
                 );
                 this._clients.set(client, clientManager);
 
-                this.clientJoined(client);
                 break;
             }
 
