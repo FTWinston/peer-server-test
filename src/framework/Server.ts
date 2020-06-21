@@ -17,16 +17,16 @@ export abstract class Server<
     TServerState extends {},
     TClientState extends {},
     TClientToServerCommand,
-    TServerToClientCommand,
+    TEvent,
     TClientStateManager extends ClientStateManager<
         TClientState,
-        TServerToClientCommand
+        TEvent
     >
 > {
     constructor(
         initialState: TServerState,
         protected readonly sendMessage: (
-            message: ServerWorkerMessageOut<TServerToClientCommand>
+            message: ServerWorkerMessageOut<TEvent>
         ) => void
     ) {
         sendMessage({
@@ -95,7 +95,7 @@ export abstract class Server<
                 }
 
                 this.clientJoined(client);
-                
+
                 const clientManager = this.createClient(client, (callback) =>
                     this.createClientState(client, callback)
                 );
@@ -172,10 +172,10 @@ export abstract class Server<
 
     protected sendCommand(
         client: string | undefined,
-        command: TServerToClientCommand
+        command: TEvent
     ) {
         this.sendMessage({
-            type: ServerWorkerMessageOutType.Command,
+            type: ServerWorkerMessageOutType.Event,
             who: client,
             command,
         });

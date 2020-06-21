@@ -4,6 +4,7 @@ import {
     deltaStateMessageIdentifier,
     fullStateMessageIdentifier,
     controlMessageIdentifier,
+    IEvent,
 } from './ServerToClientMessage';
 import {
     ClientToServerMessage,
@@ -13,9 +14,9 @@ import {
 
 export class RemoteClientConnection<
     TClientToServerCommand,
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState
-> implements IClientConnection<TServerToClientCommand> {
+> implements IClientConnection<TEvent> {
     private readonly reliable: RTCDataChannel;
     private unreliable?: RTCDataChannel;
 
@@ -75,7 +76,7 @@ export class RemoteClientConnection<
         };
     }
 
-    send(message: ServerToClientMessage<TServerToClientCommand>): void {
+    send(message: ServerToClientMessage<TEvent>): void {
         if (message[0] === controlMessageIdentifier) {
             if (message[1] === 'simulate' && this.unreliable === undefined) {
                 this.unreliable = this.peer.createDataChannel('unreliable', {

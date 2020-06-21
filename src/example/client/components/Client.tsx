@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { ConnectionSelector, TypedConnection } from './ConnectionSelector';
-import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
+import { ServerEvent } from '../../shared/ServerEvent';
 import { ClientState } from '../../shared/ClientState';
 import { useState } from 'react';
 
@@ -73,6 +73,6 @@ export const Client: React.FC = () => {
     );
 };
 
-function commandReceived(cmd: ServerToClientCommand) {
+function commandReceived(cmd: ServerEvent) {
     console.log('client received command', cmd);
 }

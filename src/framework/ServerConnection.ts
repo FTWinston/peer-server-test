@@ -1,18 +1,19 @@
 import { PatchOperation } from 'filter-mirror';
 import { applyPatch } from './applyPatch';
+import { IEvent, SystemEvent } from './ServerToClientMessage';
 
 export interface ConnectionMetadata {
     name: string;
 }
 
 export interface ConnectionParameters<
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 > {
     initialClientState: TClientState;
     initialLocalState?: TLocalState;
-    receiveCommand: (cmd: TServerToClientCommand) => void;
+    receiveCommand: (cmd: TEvent) => void;
     clientStateChanged?: (
         prevState: Readonly<TClientState>,
         newState: Readonly<TClientState>
@@ -22,24 +23,24 @@ export interface ConnectionParameters<
 
 export abstract class ServerConnection<
     TClientToServerCommand,
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 > {
     constructor(
         params: ConnectionParameters<
-            TServerToClientCommand,
+            TEvent,
             TClientState,
             TLocalState
         >
     ) {
-        this.receiveCommand = params.receiveCommand;
+        this.receiveEvent = params.receiveCommand;
         this.receiveError = params.receiveError;
         this.clientStateChanged = params.clientStateChanged;
         this._clientState = params.initialClientState;
     }
 
-    protected readonly receiveCommand: (cmd: TServerToClientCommand) => void;
+    protected readonly receiveEvent: (event: TEvent | SystemEvent) => void;
     protected readonly receiveError: (message: string) => void;
     private readonly clientStateChanged?: (
         prevState: TClientState,

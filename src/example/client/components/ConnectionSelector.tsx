@@ -1,21 +1,21 @@
 import React, { useState } from 'react';
 import { ServerConnection } from '../../../framework/ServerConnection';
 import { RemoteServerConnection } from '../../../framework/RemoteServerConnection';
-import { ClientToServerCommand } from '../../shared/ClientToServerCommand';
-import { ServerToClientCommand } from '../../shared/ServerToClientCommand';
+import { ClientCommand } from '../../shared/ClientCommand';
+import { ServerEvent } from '../../shared/ServerEvent';
 import { ClientState } from '../../shared/ClientState';
 import ServerWorker from '../../server/worker';
 import { LocalServerConnection } from '../../../framework/LocalServerConnection';
 import { defaultSignalSettings } from '../../../framework/SignalConnection';
 
 export type TypedConnection = ServerConnection<
-    ClientToServerCommand,
-    ServerToClientCommand,
+    ClientCommand,
+    ServerEvent,
     ClientState
 >;
 
 interface IProps {
-    receiveCommand: (cmd: ServerToClientCommand) => void;
+    receiveCommand: (cmd: ServerEvent) => void;
     stateChanged: (prevState: ClientState, state: ClientState) => void;
     connectionSelected: (conn: TypedConnection) => void;
 }
@@ -26,8 +26,8 @@ export const ConnectionSelector = (props: IProps) => {
 
     const selectLocal = () => {
         connection = new LocalServerConnection<
-            ClientToServerCommand,
-            ServerToClientCommand,
+            ClientCommand,
+            ServerEvent,
             ClientState
         >(
             {
@@ -39,13 +39,13 @@ export const ConnectionSelector = (props: IProps) => {
                 },
                 clientName: localName,
                 signalSettings: defaultSignalSettings,
+                ready,
                 worker: new ServerWorker(),
                 receiveCommand: (cmd) => props.receiveCommand(cmd),
                 clientStateChanged: (prevState, state) =>
                     props.stateChanged(prevState, state),
                 receiveError: (msg) => console.error(msg),
-            },
-            ready
+            }
         );
     };
 
@@ -55,8 +55,8 @@ export const ConnectionSelector = (props: IProps) => {
 
     const selectRemote = () => {
         connection = new RemoteServerConnection<
-            ClientToServerCommand,
-            ServerToClientCommand,
+            ClientCommand,
+            ServerEvent,
             ClientState
         >({
             initialClientState: {

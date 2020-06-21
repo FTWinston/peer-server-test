@@ -5,12 +5,12 @@ export const enum ServerWorkerMessageOutType {
     Ready,
     FullState,
     DeltaState,
-    Command,
+    Event,
     Disconnect,
     Control,
 }
 
-export type ServerWorkerMessageOut<TServerToClientCommand> =
+export type ServerWorkerMessageOut<TEvent> =
     | {
           type: ServerWorkerMessageOutType.FullState;
           who: string;
@@ -24,9 +24,9 @@ export type ServerWorkerMessageOut<TServerToClientCommand> =
           state: PatchOperation[];
       }
     | {
-          type: ServerWorkerMessageOutType.Command;
+          type: ServerWorkerMessageOutType.Event;
           who?: string;
-          command: TServerToClientCommand;
+          command: TEvent;
       }
     | {
           type: ServerWorkerMessageOutType.Ready;

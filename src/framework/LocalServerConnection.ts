@@ -1,12 +1,14 @@
 import { ServerWorkerMessageInType } from './ServerWorkerMessageIn';
 import {
-    commandMessageIdentifier,
+    eventMessageIdentifier,
     deltaStateMessageIdentifier,
     fullStateMessageIdentifier,
     errorMessageIdentifier,
     controlMessageIdentifier,
     ControlOperation,
     ServerToClientMessage,
+    SystemEvent,
+    IEvent,
 } from './ServerToClientMessage';
 import {
     OfflineServerConnection,
@@ -18,12 +20,12 @@ import { IConnectionSettings } from './SignalConnection';
 import { PatchOperation } from 'filter-mirror';
 
 export interface LocalConnectionParameters<
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {}
 >
     extends OfflineConnectionParameters<
-        TServerToClientCommand,
+        TEvent,
         TClientState,
         TLocalState
     > {
@@ -34,27 +36,27 @@ export interface LocalConnectionParameters<
 
 export class LocalServerConnection<
     TClientToServerCommand,
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 >
     extends OfflineServerConnection<
         TClientToServerCommand,
-        TServerToClientCommand,
+        TEvent,
         TClientState,
         TLocalState
     >
-    implements IClientConnection<TServerToClientCommand> {
+    implements IClientConnection<TEvent> {
     private clients: ConnectionManager<
         TClientToServerCommand,
-        TServerToClientCommand,
+        TEvent,
         TClientState
     >;
     readonly clientName: string;
 
     constructor(
         params: LocalConnectionParameters<
-            TServerToClientCommand,
+            TEvent,
             TClientState,
             TLocalState
         >
@@ -91,38 +93,38 @@ export class LocalServerConnection<
         // Don't send a join message right away. This will instead be sent once the peer is initialized.
     }
 
-    send(message: ServerToClientMessage<TServerToClientCommand>): void {
+    send(message: ServerToClientMessage<TEvent>): void {
         // TODO: can we avoid having this AND separate dispatch operations?
 
-        if (message[0] === 's') {
-            super.dispatchFullStateFromServer(
+        if (message[0] === fullStateMessageIdentifier) {
+            super.dispatchFullState(
                 this.clientName,
                 message[1],
                 message[2]
             );
-        } else if (message[0] === 'd') {
-            super.dispatchDeltaStateFromServer(
+        } else if (message[0] === deltaStateMessageIdentifier) {
+            super.dispatchDeltaState(
                 this.clientName,
                 message[1],
                 message[2]
             );
-        } else if (message[0] === 'c') {
-            super.dispatchCommandFromServer(this.clientName, message[1]);
-        } else if (message[0] === 'e') {
+        } else if (message[0] === eventMessageIdentifier) {
+            super.dispatchEvent(this.clientName, message[1]);
+        } else if (message[0] === errorMessageIdentifier) {
             super.dispatchError(this.clientName, message[1]);
-        } else if (message[0] === 'x') {
+        } else if (message[0] === controlMessageIdentifier) {
             // control operation ... doesn't apply to local client?
         }
     }
 
-    protected dispatchCommandFromServer(
+    protected dispatchEvent(
         client: string | undefined,
-        command: TServerToClientCommand
+        event: TEvent | SystemEvent
     ) {
-        this.clients.sendToClient(client, [commandMessageIdentifier, command]);
+        this.clients.sendToClient(client, [eventMessageIdentifier, event]);
     }
 
-    protected dispatchFullStateFromServer(
+    protected dispatchFullState(
         client: string,
         state: string,
         time: number
@@ -134,7 +136,7 @@ export class LocalServerConnection<
         ]);
     }
 
-    protected dispatchDeltaStateFromServer(
+    protected dispatchDeltaState(
         client: string,
         state: PatchOperation[],
         time: number

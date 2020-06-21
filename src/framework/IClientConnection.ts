@@ -1,9 +1,9 @@
-import { ServerToClientMessage } from './ServerToClientMessage';
+import { ServerToClientMessage, IEvent } from './ServerToClientMessage';
 
-export interface IClientConnection<TServerToClientCommand> {
+export interface IClientConnection<TEvent extends IEvent> {
     readonly clientName: string;
 
-    send(message: ServerToClientMessage<TServerToClientCommand>): void;
+    send(message: ServerToClientMessage<TEvent>): void;
 
     disconnect(): void;
 }

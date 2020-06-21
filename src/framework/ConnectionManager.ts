@@ -1,5 +1,5 @@
 import { OfflineConnectionParameters } from './OfflineServerConnection';
-import { ServerToClientMessage } from './ServerToClientMessage';
+import { ServerToClientMessage, IEvent } from './ServerToClientMessage';
 import {
     ServerWorkerMessageIn,
     ServerWorkerMessageInType,
@@ -9,21 +9,21 @@ import { IClientConnection } from './IClientConnection';
 import { RemoteClientConnection } from './RemoteClientConnection';
 import { IConnectionSettings } from './SignalConnection';
 
-export interface ServerPeerParameters<TServerToClientCommand, TClientState>
-    extends OfflineConnectionParameters<TServerToClientCommand, TClientState> {
+export interface ServerPeerParameters<TEvent extends IEvent, TClientState>
+    extends OfflineConnectionParameters<TEvent, TClientState> {
     initialClientState: TClientState;
     clientName: string;
 }
 
 export class ConnectionManager<
     TClientToServerCommand,
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState
 > {
     private signal: ServerSignalConnection;
     private readonly clients = new Map<
         string,
-        IClientConnection<TServerToClientCommand>
+        IClientConnection<TEvent>
     >();
 
     constructor(
@@ -32,7 +32,7 @@ export class ConnectionManager<
         ) => void,
         ready: (sessionID: string) => void,
         signalSettings: IConnectionSettings,
-        localClient?: IClientConnection<TServerToClientCommand>
+        localClient?: IClientConnection<TEvent>
     ) {
         this.signal = new ServerSignalConnection(
             signalSettings,
@@ -68,11 +68,11 @@ export class ConnectionManager<
     private remoteClientJoining(name: string, peer: RTCPeerConnection) {
         const client: RemoteClientConnection<
             TClientToServerCommand,
-            TServerToClientCommand,
+            TEvent,
             TClientState
         > = new RemoteClientConnection<
             TClientToServerCommand,
-            TServerToClientCommand,
+            TEvent,
             TClientState
         >(
             name,
@@ -87,7 +87,7 @@ export class ConnectionManager<
     }
 
     // This doesn't apply to local client, that's handled in LocalServerConnection
-    private clientConnected(client: IClientConnection<TServerToClientCommand>) {
+    private clientConnected(client: IClientConnection<TEvent>) {
         this.sendToServer({
             type: ServerWorkerMessageInType.Join,
             who: client.clientName,
@@ -96,7 +96,7 @@ export class ConnectionManager<
 
     // This doesn't apply to local client, that's handled in LocalServerConnection
     private clientDisconnected(
-        client: IClientConnection<TServerToClientCommand>
+        client: IClientConnection<TEvent>
     ) {
         this.sendToServer({
             type: ServerWorkerMessageInType.Quit,
@@ -108,7 +108,7 @@ export class ConnectionManager<
 
     // This doesn't apply to local client, that's handled in LocalServerConnection
     private clientAcknowledged(
-        client: IClientConnection<TServerToClientCommand>,
+        client: IClientConnection<TEvent>,
         time: number
     ) {
         this.sendToServer({
@@ -120,7 +120,7 @@ export class ConnectionManager<
 
     // This doesn't apply to local client, that's handled in LocalServerConnection
     private clientCommand(
-        client: IClientConnection<TServerToClientCommand>,
+        client: IClientConnection<TEvent>,
         command: TClientToServerCommand
     ) {
         this.sendToServer({
@@ -132,7 +132,7 @@ export class ConnectionManager<
 
     public sendToClient(
         client: string | undefined,
-        message: ServerToClientMessage<TServerToClientCommand>
+        message: ServerToClientMessage<TEvent>
     ) {
         if (client === undefined) {
             for (const conn of this.clients.values()) {

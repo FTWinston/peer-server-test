@@ -7,16 +7,16 @@ import {
     ServerWorkerMessageOut,
     ServerWorkerMessageOutType,
 } from './ServerWorkerMessageOut';
-import { ControlOperation } from './ServerToClientMessage';
+import { ControlOperation, IEvent, SystemEvent } from './ServerToClientMessage';
 import { PatchOperation } from 'filter-mirror';
 
 export interface OfflineConnectionParameters<
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 >
     extends ConnectionParameters<
-        TServerToClientCommand,
+        TEvent,
         TClientState,
         TLocalState
     > {
@@ -25,18 +25,18 @@ export interface OfflineConnectionParameters<
 
 export class OfflineServerConnection<
     TClientToServerCommand,
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 > extends ServerConnection<
     TClientToServerCommand,
-    TServerToClientCommand,
+    TEvent,
     TClientState,
     TLocalState
 > {
     constructor(
         params: OfflineConnectionParameters<
-            TServerToClientCommand,
+            TEvent,
             TClientState,
             TLocalState
         >,
@@ -52,21 +52,21 @@ export class OfflineServerConnection<
     private ready?: () => void;
 
     private receiveMessageFromServer(
-        message: ServerWorkerMessageOut<TServerToClientCommand>
+        message: ServerWorkerMessageOut<TEvent>
     ) {
         switch (message.type) {
-            case ServerWorkerMessageOutType.Command:
-                this.dispatchCommandFromServer(message.who, message.command);
+            case ServerWorkerMessageOutType.Event:
+                this.dispatchEvent(message.who, message.command);
                 break;
             case ServerWorkerMessageOutType.FullState:
-                this.dispatchFullStateFromServer(
+                this.dispatchFullState(
                     message.who,
                     message.state,
                     message.time
                 );
                 break;
             case ServerWorkerMessageOutType.DeltaState:
-                this.dispatchDeltaStateFromServer(
+                this.dispatchDeltaState(
                     message.who,
                     message.state,
                     message.time
@@ -101,14 +101,14 @@ export class OfflineServerConnection<
         });
     }
 
-    protected dispatchCommandFromServer(
+    protected dispatchEvent(
         client: string | undefined,
-        command: TServerToClientCommand
+        event: TEvent | SystemEvent
     ) {
-        this.receiveCommand(command);
+        this.receiveEvent(event);
     }
 
-    protected dispatchFullStateFromServer(
+    protected dispatchFullState(
         client: string,
         state: string,
         time: number
@@ -122,7 +122,7 @@ export class OfflineServerConnection<
         this.receiveFullState(JSON.parse(state));
     }
 
-    protected dispatchDeltaStateFromServer(
+    protected dispatchDeltaState(
         client: string,
         state: PatchOperation[],
         time: number

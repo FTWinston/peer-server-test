@@ -14,13 +14,13 @@ export abstract class SimulatingServer<
     TServerState extends {},
     TClientState extends {},
     TClientToServerCommand,
-    TServerToClientCommand
+    TEvent
 > extends Server<
     TServerState,
     TClientState,
     TClientToServerCommand,
-    TServerToClientCommand,
-    UnreliableClientStateManager<TClientState, TServerToClientCommand>
+    TEvent,
+    UnreliableClientStateManager<TClientState, TEvent>
 > {
     private tickTimer: NodeJS.Timeout | undefined;
     private lastTickTime: number;
@@ -28,7 +28,7 @@ export abstract class SimulatingServer<
     constructor(
         initialState: TServerState,
         sendMessage: (
-            message: ServerWorkerMessageOut<TServerToClientCommand>
+            message: ServerWorkerMessageOut<TEvent>
         ) => void,
         private readonly tickInterval: number
     ) {
@@ -76,7 +76,7 @@ export abstract class SimulatingServer<
 
         const clientManager = new UnreliableClientStateManager<
             TClientState,
-            TServerToClientCommand
+            TEvent
         >(client, createState, this.sendMessage);
 
         return clientManager;

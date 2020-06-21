@@ -1,22 +1,23 @@
 import { ServerConnection, ConnectionParameters } from './ServerConnection';
 import {
-    commandMessageIdentifier,
+    eventMessageIdentifier,
     deltaStateMessageIdentifier,
     fullStateMessageIdentifier,
     errorMessageIdentifier,
     ServerToClientMessage,
+    IEvent,
 } from './ServerToClientMessage';
 import { acknowledgeMessageIdentifier } from './ClientToServerMessage';
 import { IConnectionSettings } from './SignalConnection';
 import { ClientSignalConnection } from './ClientSignalConnection';
 
 export interface RemoteConnectionParameters<
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 >
     extends ConnectionParameters<
-        TServerToClientCommand,
+        TEvent,
         TClientState,
         TLocalState
     > {
@@ -28,12 +29,12 @@ export interface RemoteConnectionParameters<
 
 export class RemoteServerConnection<
     TClientToServerCommand,
-    TServerToClientCommand,
+    TEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 > extends ServerConnection<
     TClientToServerCommand,
-    TServerToClientCommand,
+    TEvent,
     TClientState,
     TLocalState
 > {
@@ -44,7 +45,7 @@ export class RemoteServerConnection<
 
     constructor(
         params: RemoteConnectionParameters<
-            TServerToClientCommand,
+            TEvent,
             TClientState,
             TLocalState
         >
@@ -82,7 +83,7 @@ export class RemoteServerConnection<
                 this.reliable.onmessage = (event) => {
                     const data = JSON.parse(
                         event.data
-                    ) as ServerToClientMessage<TServerToClientCommand>;
+                    ) as ServerToClientMessage<TEvent>;
 
                     switch (data[0]) {
                         case fullStateMessageIdentifier:
@@ -93,8 +94,8 @@ export class RemoteServerConnection<
                             this.receiveDeltaState(data[1]);
                             break;
 
-                        case commandMessageIdentifier:
-                            this.receiveCommand(data[1]);
+                        case eventMessageIdentifier:
+                            this.receiveEvent(data[1]);
                             break;
                         case errorMessageIdentifier:
                             this.receiveError(data[1]);
@@ -118,7 +119,7 @@ export class RemoteServerConnection<
                 this.unreliable.onmessage = (event) => {
                     const data = JSON.parse(
                         event.data
-                    ) as ServerToClientMessage<TServerToClientCommand>;
+                    ) as ServerToClientMessage<TEvent>;
                     switch (data[0]) {
                         case fullStateMessageIdentifier:
                             this.sendAcknowledgement(data[2]);
@@ -147,7 +148,7 @@ export class RemoteServerConnection<
     }
 
     sendCommand(command: TClientToServerCommand) {
-        this.reliable.send(JSON.stringify([commandMessageIdentifier, command]));
+        this.reliable.send(JSON.stringify([eventMessageIdentifier, command]));
     }
 
     sendAcknowledgement(time: number) {
@@ -165,7 +166,7 @@ export class RemoteServerConnection<
     get localId() {
         return this.clientName;
     }
-    
+
     get sessionId() {
         return this._sessionId;
     }

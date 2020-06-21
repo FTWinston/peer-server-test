@@ -1,5 +1,5 @@
-import { ClientToServerCommand } from '../shared/ClientToServerCommand';
-import { ServerToClientCommand } from '../shared/ServerToClientCommand';
+import { ClientCommand } from '../shared/ClientCommand';
+import { ServerEvent } from '../shared/ServerEvent';
 import { ServerState } from './ServerState';
 import { Player, ClientState } from '../shared/ClientState';
 import { SimulatingServer } from '../../framework/SimulatingServer';
@@ -11,12 +11,12 @@ const tickInterval = 500; // this many milliseconds between each server tick
 export class TestServer extends SimulatingServer<
     ServerState,
     ServerState,
-    ClientToServerCommand,
-    ServerToClientCommand
+    ClientCommand,
+    ServerEvent
 > {
     constructor(
         sendMessage: (
-            message: ServerWorkerMessageOut<ServerToClientCommand>
+            message: ServerWorkerMessageOut<ServerEvent>
         ) => void
     ) {
         super(
@@ -54,7 +54,7 @@ export class TestServer extends SimulatingServer<
 
     public receiveCommandFromClient(
         name: string,
-        command: ClientToServerCommand
+        command: ClientCommand
     ): void {
         switch (command) {
             case 'left': {
