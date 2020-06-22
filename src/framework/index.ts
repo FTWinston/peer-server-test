@@ -4,6 +4,7 @@ export { StatefulServer } from './StatefulServer';
 export { OfflineServerConnection } from './OfflineServerConnection';
 export { LocalServerConnection } from './LocalServerConnection';
 export { RemoteServerConnection } from './RemoteServerConnection';
+export { SystemEvent } from './ServerToClientMessage';
 export { ServerWorkerMessageIn } from './ServerWorkerMessageIn';
 export { ServerWorkerMessageOut } from './ServerWorkerMessageOut';
 export { FieldMappings, extraFields, anyOtherFields, shouldMap } from 'filter-mirror';
