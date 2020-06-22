@@ -6,19 +6,19 @@ import { PatchOperation } from 'filter-mirror';
 export abstract class StatefulServer<
     TServerState extends {},
     TClientState extends {},
-    TClientToServerCommand,
-    TEvent
+    TClientCommand,
+    TServerEvent
 > extends Server<
     TServerState,
     TClientState,
-    TClientToServerCommand,
-    TEvent,
-    ClientStateManager<TClientState, TEvent>
+    TClientCommand,
+    TServerEvent,
+    ClientStateManager<TClientState, TServerEvent>
 > {
     constructor(
         initialState: TServerState,
         protected readonly sendMessage: (
-            message: ServerWorkerMessageOut<TEvent>
+            message: ServerWorkerMessageOut<TServerEvent>
         ) => void
     ) {
         super(initialState, sendMessage);
@@ -32,7 +32,7 @@ export abstract class StatefulServer<
     ) {
         const clientManager = new ClientStateManager<
             TClientState,
-            TEvent
+            TServerEvent
         >(client, createState, this.sendMessage);
 
         const time = Math.round(performance.now());

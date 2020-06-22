@@ -33,7 +33,7 @@ export const Client: React.FC = () => {
         return (
             <ConnectionSelector
                 connectionSelected={connectionSelected}
-                receiveCommand={commandReceived}
+                receiveEvent={eventReceived}
                 stateChanged={stateReceived}
             />
         );
@@ -73,6 +73,6 @@ export const Client: React.FC = () => {
     );
 };
 
-function commandReceived(cmd: ServerEvent) {
-    console.log('client received command', cmd);
+function eventReceived(cmd: ServerEvent) {
+    console.log('client received event', cmd);
 }

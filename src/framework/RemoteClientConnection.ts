@@ -13,10 +13,9 @@ import {
 } from './ClientToServerMessage';
 
 export class RemoteClientConnection<
-    TClientToServerCommand,
-    TEvent extends IEvent,
-    TClientState
-> implements IClientConnection<TEvent> {
+    TClientCommand,
+    TServerEvent extends IEvent
+> implements IClientConnection<TServerEvent> {
     private readonly reliable: RTCDataChannel;
     private unreliable?: RTCDataChannel;
 
@@ -27,7 +26,7 @@ export class RemoteClientConnection<
         private readonly disconnected: () => void,
         private readonly receiveAcknowledge: (time: number) => void,
         private readonly receiveCommand: (
-            command: TClientToServerCommand
+            command: TClientCommand
         ) => void
     ) {
         this.reliable = peer.createDataChannel('reliable', {
@@ -61,7 +60,7 @@ export class RemoteClientConnection<
 
         channel.onmessage = (event) => {
             const data = JSON.parse(event.data) as ClientToServerMessage<
-                TClientToServerCommand
+                TClientCommand
             >;
 
             if (data[0] === acknowledgeMessageIdentifier) {
@@ -76,7 +75,7 @@ export class RemoteClientConnection<
         };
     }
 
-    send(message: ServerToClientMessage<TEvent>): void {
+    send(message: ServerToClientMessage<TServerEvent>): void {
         if (message[0] === controlMessageIdentifier) {
             if (message[1] === 'simulate' && this.unreliable === undefined) {
                 this.unreliable = this.peer.createDataChannel('unreliable', {

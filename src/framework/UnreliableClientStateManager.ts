@@ -6,8 +6,8 @@ const unacknowledgedDeltaInterval = 1000; // If we go for this may milliseconds 
 
 export class UnreliableClientStateManager<
     TClientState,
-    TEvent
-> extends ClientStateManager<TClientState, TEvent> {
+    TServerEvent
+> extends ClientStateManager<TClientState, TServerEvent> {
     public lastAcknowledgedTime?: number;
 
     private readonly unacknowledgedDeltas = new Map<number, PatchOperation[]>();
@@ -18,7 +18,7 @@ export class UnreliableClientStateManager<
             callback: (patch: PatchOperation) => void
         ) => TClientState,
         sendMessage: (
-            message: ServerWorkerMessageOut<TEvent>
+            message: ServerWorkerMessageOut<TServerEvent>
         ) => void
     ) {
         super(name, getInitialState, sendMessage);

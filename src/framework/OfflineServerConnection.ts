@@ -11,12 +11,12 @@ import { ControlOperation, IEvent, SystemEvent } from './ServerToClientMessage';
 import { PatchOperation } from 'filter-mirror';
 
 export interface OfflineConnectionParameters<
-    TEvent extends IEvent,
+    TServerEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 >
     extends ConnectionParameters<
-        TEvent,
+        TServerEvent,
         TClientState,
         TLocalState
     > {
@@ -24,19 +24,19 @@ export interface OfflineConnectionParameters<
 }
 
 export class OfflineServerConnection<
-    TClientToServerCommand,
-    TEvent extends IEvent,
+    TClientCommand,
+    TServerEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 > extends ServerConnection<
-    TClientToServerCommand,
-    TEvent,
+    TClientCommand,
+    TServerEvent,
     TClientState,
     TLocalState
 > {
     constructor(
         params: OfflineConnectionParameters<
-            TEvent,
+            TServerEvent,
             TClientState,
             TLocalState
         >,
@@ -52,11 +52,11 @@ export class OfflineServerConnection<
     private ready?: () => void;
 
     private receiveMessageFromServer(
-        message: ServerWorkerMessageOut<TEvent>
+        message: ServerWorkerMessageOut<TServerEvent>
     ) {
         switch (message.type) {
             case ServerWorkerMessageOutType.Event:
-                this.dispatchEvent(message.who, message.command);
+                this.dispatchEvent(message.who, message.event);
                 break;
             case ServerWorkerMessageOutType.FullState:
                 this.dispatchFullState(
@@ -103,7 +103,7 @@ export class OfflineServerConnection<
 
     protected dispatchEvent(
         client: string | undefined,
-        event: TEvent | SystemEvent
+        event: TServerEvent | SystemEvent
     ) {
         this.receiveEvent(event);
     }
@@ -137,12 +137,12 @@ export class OfflineServerConnection<
     }
 
     protected sendMessageToServer(
-        message: ServerWorkerMessageIn<TClientToServerCommand>
+        message: ServerWorkerMessageIn<TClientCommand>
     ) {
         this.worker.postMessage(message);
     }
 
-    sendCommand(command: TClientToServerCommand) {
+    sendCommand(command: TClientCommand) {
         this.sendMessageToServer({
             type: ServerWorkerMessageInType.Command,
             who: this.localId,

@@ -7,13 +7,13 @@ export interface ConnectionMetadata {
 }
 
 export interface ConnectionParameters<
-    TEvent extends IEvent,
+    TServerEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 > {
     initialClientState: TClientState;
     initialLocalState?: TLocalState;
-    receiveCommand: (cmd: TEvent) => void;
+    receiveEvent: (cmd: TServerEvent) => void;
     clientStateChanged?: (
         prevState: Readonly<TClientState>,
         newState: Readonly<TClientState>
@@ -22,25 +22,25 @@ export interface ConnectionParameters<
 }
 
 export abstract class ServerConnection<
-    TClientToServerCommand,
-    TEvent extends IEvent,
+    TClientCommand,
+    TServerEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 > {
     constructor(
         params: ConnectionParameters<
-            TEvent,
+            TServerEvent,
             TClientState,
             TLocalState
         >
     ) {
-        this.receiveEvent = params.receiveCommand;
+        this.receiveEvent = params.receiveEvent;
         this.receiveError = params.receiveError;
         this.clientStateChanged = params.clientStateChanged;
         this._clientState = params.initialClientState;
     }
 
-    protected readonly receiveEvent: (event: TEvent | SystemEvent) => void;
+    protected readonly receiveEvent: (event: TServerEvent | SystemEvent) => void;
     protected readonly receiveError: (message: string) => void;
     private readonly clientStateChanged?: (
         prevState: TClientState,
@@ -76,7 +76,7 @@ export abstract class ServerConnection<
         }
     }
 
-    abstract sendCommand(command: TClientToServerCommand): void;
+    abstract sendCommand(command: TClientCommand): void;
 
     abstract disconnect(): void;
 

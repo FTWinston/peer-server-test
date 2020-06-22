@@ -20,9 +20,9 @@ export type SystemEvent = {
     client: string;
 };
 
-export type ServerToClientMessage<TEvent extends IEvent> =
+export type ServerToClientMessage<TServerEvent extends IEvent> =
     | ['s', string, number]
     | ['d', PatchOperation[], number]
-    | ['c', TEvent | SystemEvent]
+    | ['c', TServerEvent | SystemEvent]
     | ['e', string]
     | ['x', ControlOperation];

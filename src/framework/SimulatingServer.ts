@@ -13,14 +13,14 @@ import { PatchOperation } from 'filter-mirror';
 export abstract class SimulatingServer<
     TServerState extends {},
     TClientState extends {},
-    TClientToServerCommand,
-    TEvent
+    TClientCommand,
+    TServerEvent
 > extends Server<
     TServerState,
     TClientState,
-    TClientToServerCommand,
-    TEvent,
-    UnreliableClientStateManager<TClientState, TEvent>
+    TClientCommand,
+    TServerEvent,
+    UnreliableClientStateManager<TClientState, TServerEvent>
 > {
     private tickTimer: NodeJS.Timeout | undefined;
     private lastTickTime: number;
@@ -28,7 +28,7 @@ export abstract class SimulatingServer<
     constructor(
         initialState: TServerState,
         sendMessage: (
-            message: ServerWorkerMessageOut<TEvent>
+            message: ServerWorkerMessageOut<TServerEvent>
         ) => void,
         private readonly tickInterval: number
     ) {
@@ -76,14 +76,14 @@ export abstract class SimulatingServer<
 
         const clientManager = new UnreliableClientStateManager<
             TClientState,
-            TEvent
+            TServerEvent
         >(client, createState, this.sendMessage);
 
         return clientManager;
     }
 
     public receiveMessage(
-        message: ServerWorkerMessageIn<TClientToServerCommand>
+        message: ServerWorkerMessageIn<TClientCommand>
     ) {
         switch (message.type) {
             case ServerWorkerMessageInType.Acknowledge:

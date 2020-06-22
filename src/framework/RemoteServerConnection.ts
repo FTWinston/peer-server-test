@@ -12,12 +12,12 @@ import { IConnectionSettings } from './SignalConnection';
 import { ClientSignalConnection } from './ClientSignalConnection';
 
 export interface RemoteConnectionParameters<
-    TEvent extends IEvent,
+    TServerEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 >
     extends ConnectionParameters<
-        TEvent,
+        TServerEvent,
         TClientState,
         TLocalState
     > {
@@ -28,13 +28,13 @@ export interface RemoteConnectionParameters<
 }
 
 export class RemoteServerConnection<
-    TClientToServerCommand,
-    TEvent extends IEvent,
+    TClientCommand,
+    TServerEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 > extends ServerConnection<
-    TClientToServerCommand,
-    TEvent,
+    TClientCommand,
+    TServerEvent,
     TClientState,
     TLocalState
 > {
@@ -45,7 +45,7 @@ export class RemoteServerConnection<
 
     constructor(
         params: RemoteConnectionParameters<
-            TEvent,
+            TServerEvent,
             TClientState,
             TLocalState
         >
@@ -83,7 +83,7 @@ export class RemoteServerConnection<
                 this.reliable.onmessage = (event) => {
                     const data = JSON.parse(
                         event.data
-                    ) as ServerToClientMessage<TEvent>;
+                    ) as ServerToClientMessage<TServerEvent>;
 
                     switch (data[0]) {
                         case fullStateMessageIdentifier:
@@ -119,7 +119,7 @@ export class RemoteServerConnection<
                 this.unreliable.onmessage = (event) => {
                     const data = JSON.parse(
                         event.data
-                    ) as ServerToClientMessage<TEvent>;
+                    ) as ServerToClientMessage<TServerEvent>;
                     switch (data[0]) {
                         case fullStateMessageIdentifier:
                             this.sendAcknowledgement(data[2]);
@@ -147,7 +147,7 @@ export class RemoteServerConnection<
         };
     }
 
-    sendCommand(command: TClientToServerCommand) {
+    sendCommand(command: TClientCommand) {
         this.reliable.send(JSON.stringify([eventMessageIdentifier, command]));
     }
 

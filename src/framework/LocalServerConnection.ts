@@ -20,12 +20,12 @@ import { IConnectionSettings } from './SignalConnection';
 import { PatchOperation } from 'filter-mirror';
 
 export interface LocalConnectionParameters<
-    TEvent extends IEvent,
+    TServerEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {}
 >
     extends OfflineConnectionParameters<
-        TEvent,
+        TServerEvent,
         TClientState,
         TLocalState
     > {
@@ -35,28 +35,28 @@ export interface LocalConnectionParameters<
 }
 
 export class LocalServerConnection<
-    TClientToServerCommand,
-    TEvent extends IEvent,
+    TClientCommand,
+    TServerEvent extends IEvent,
     TClientState extends {},
     TLocalState extends {} = {}
 >
     extends OfflineServerConnection<
-        TClientToServerCommand,
-        TEvent,
+        TClientCommand,
+        TServerEvent,
         TClientState,
         TLocalState
     >
-    implements IClientConnection<TEvent> {
+    implements IClientConnection<TServerEvent> {
     private clients: ConnectionManager<
-        TClientToServerCommand,
-        TEvent,
+        TClientCommand,
+        TServerEvent,
         TClientState
     >;
     readonly clientName: string;
 
     constructor(
         params: LocalConnectionParameters<
-            TEvent,
+            TServerEvent,
             TClientState,
             TLocalState
         >
@@ -93,7 +93,7 @@ export class LocalServerConnection<
         // Don't send a join message right away. This will instead be sent once the peer is initialized.
     }
 
-    send(message: ServerToClientMessage<TEvent>): void {
+    send(message: ServerToClientMessage<TServerEvent>): void {
         // TODO: can we avoid having this AND separate dispatch operations?
 
         if (message[0] === fullStateMessageIdentifier) {
@@ -119,7 +119,7 @@ export class LocalServerConnection<
 
     protected dispatchEvent(
         client: string | undefined,
-        event: TEvent | SystemEvent
+        event: TServerEvent | SystemEvent
     ) {
         this.clients.sendToClient(client, [eventMessageIdentifier, event]);
     }

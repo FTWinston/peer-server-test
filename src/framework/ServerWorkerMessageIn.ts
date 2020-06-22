@@ -5,11 +5,11 @@ export const enum ServerWorkerMessageInType {
     Command,
 }
 
-export type ServerWorkerMessageIn<TClientToServerCommand> =
+export type ServerWorkerMessageIn<TClientCommand> =
     | {
           type: ServerWorkerMessageInType.Command;
           who: string;
-          command: TClientToServerCommand;
+          command: TClientCommand;
       }
     | {
           type: ServerWorkerMessageInType.Join;

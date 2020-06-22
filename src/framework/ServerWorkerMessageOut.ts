@@ -10,7 +10,7 @@ export const enum ServerWorkerMessageOutType {
     Control,
 }
 
-export type ServerWorkerMessageOut<TEvent> =
+export type ServerWorkerMessageOut<TServerEvent> =
     | {
           type: ServerWorkerMessageOutType.FullState;
           who: string;
@@ -26,7 +26,7 @@ export type ServerWorkerMessageOut<TEvent> =
     | {
           type: ServerWorkerMessageOutType.Event;
           who?: string;
-          command: TEvent;
+          event: TServerEvent;
       }
     | {
           type: ServerWorkerMessageOutType.Ready;

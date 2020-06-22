@@ -4,14 +4,14 @@ import {
 } from './ServerWorkerMessageOut';
 import { PatchOperation } from 'filter-mirror';
 
-export class ClientStateManager<TClientState, TEvent> {
+export class ClientStateManager<TClientState, TServerEvent> {
     public constructor(
         public readonly name: string,
         getInitialState: (
             callback: (patch: PatchOperation) => void
         ) => TClientState,
         private readonly sendMessage: (
-            message: ServerWorkerMessageOut<TEvent>
+            message: ServerWorkerMessageOut<TServerEvent>
         ) => void
     ) {
         this.state = getInitialState((patch) => this.patches.push(patch));

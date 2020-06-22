@@ -15,7 +15,7 @@ export type TypedConnection = ServerConnection<
 >;
 
 interface IProps {
-    receiveCommand: (cmd: ServerEvent) => void;
+    receiveEvent: (event: ServerEvent) => void;
     stateChanged: (prevState: ClientState, state: ClientState) => void;
     connectionSelected: (conn: TypedConnection) => void;
 }
@@ -41,7 +41,7 @@ export const ConnectionSelector = (props: IProps) => {
                 signalSettings: defaultSignalSettings,
                 ready,
                 worker: new ServerWorker(),
-                receiveCommand: (cmd) => props.receiveCommand(cmd),
+                receiveEvent: (evt) => props.receiveEvent(evt),
                 clientStateChanged: (prevState, state) =>
                     props.stateChanged(prevState, state),
                 receiveError: (msg) => console.error(msg),
@@ -68,7 +68,7 @@ export const ConnectionSelector = (props: IProps) => {
             sessionId,
             signalSettings: defaultSignalSettings,
             clientName: localName,
-            receiveCommand: (cmd) => props.receiveCommand(cmd),
+            receiveEvent: (cmd) => props.receiveEvent(cmd),
             clientStateChanged: (prevState, state) =>
                 props.stateChanged(prevState, state),
             receiveError: (msg) => console.error(msg),

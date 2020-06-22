@@ -16,17 +16,17 @@ export type RecursiveReadonly<T> = {
 export abstract class Server<
     TServerState extends {},
     TClientState extends {},
-    TClientToServerCommand,
-    TEvent,
+    TClientCommand,
+    TServerEvent,
     TClientStateManager extends ClientStateManager<
         TClientState,
-        TEvent
+        TServerEvent
     >
 > {
     constructor(
         initialState: TServerState,
         protected readonly sendMessage: (
-            message: ServerWorkerMessageOut<TEvent>
+            message: ServerWorkerMessageOut<TServerEvent>
         ) => void
     ) {
         sendMessage({
@@ -73,7 +73,7 @@ export abstract class Server<
     }
 
     public receiveMessage(
-        message: ServerWorkerMessageIn<TClientToServerCommand>
+        message: ServerWorkerMessageIn<TClientCommand>
     ) {
         const client = message.who;
 
@@ -167,17 +167,17 @@ export abstract class Server<
 
     protected abstract receiveCommandFromClient(
         client: string,
-        command: TClientToServerCommand
+        command: TClientCommand
     ): void;
 
-    protected sendCommand(
+    protected sendEvent(
         client: string | undefined,
-        command: TEvent
+        event: TServerEvent
     ) {
         this.sendMessage({
             type: ServerWorkerMessageOutType.Event,
             who: client,
-            command,
+            event,
         });
     }
 
