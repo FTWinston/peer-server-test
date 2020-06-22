@@ -8,6 +8,7 @@ import {
 } from './ServerWorkerMessageOut';
 import { FieldMappings, multiFilter, PatchOperation } from 'filter-mirror';
 import { ClientStateManager } from './ClientStateManager';
+import { SystemEvent } from './ServerToClientMessage';
 
 export type RecursiveReadonly<T> = {
     readonly [P in keyof T]: RecursiveReadonly<T[P]>;
@@ -101,6 +102,11 @@ export abstract class Server<
                 );
                 this._clients.set(client, clientManager);
 
+                this.sendEvent(undefined, {
+                    type: 'join',
+                    client,
+                });
+
                 break;
             }
 
@@ -113,6 +119,12 @@ export abstract class Server<
                     this.removeClientState(client);
                     this.clientQuit(client);
                 }
+
+                this.sendEvent(undefined, {
+                    type: 'quit',
+                    client,
+                });
+
                 break;
             }
 
@@ -172,7 +184,7 @@ export abstract class Server<
 
     protected sendEvent(
         client: string | undefined,
-        event: TServerEvent
+        event: TServerEvent | SystemEvent
     ) {
         this.sendMessage({
             type: ServerWorkerMessageOutType.Event,

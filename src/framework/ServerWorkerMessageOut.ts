@@ -1,4 +1,4 @@
-import { ControlOperation } from './ServerToClientMessage';
+import { ControlOperation, SystemEvent } from './ServerToClientMessage';
 import { PatchOperation } from 'filter-mirror';
 
 export const enum ServerWorkerMessageOutType {
@@ -26,7 +26,7 @@ export type ServerWorkerMessageOut<TServerEvent> =
     | {
           type: ServerWorkerMessageOutType.Event;
           who?: string;
-          event: TServerEvent;
+          event: TServerEvent | SystemEvent;
       }
     | {
           type: ServerWorkerMessageOutType.Ready;
