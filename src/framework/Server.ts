@@ -40,7 +40,8 @@ export abstract class Server<
             string
         >(initialState, (client) => this.mapClientState(client));
 
-        this._state = proxy;
+        this._state = initialState;
+        this._stateProxy = proxy;
         this.createClientState = createMirror;
         this.removeClientState = removeMirror;
     }
@@ -58,13 +59,14 @@ export abstract class Server<
     ) => void;
 
     private _state: TServerState;
+    private _stateProxy: TServerState;
 
     public get state(): RecursiveReadonly<TServerState> {
         return this._state;
     }
 
     protected updateState(update: (state: TServerState) => void) {
-        update(this._state);
+        update(this._stateProxy);
     }
 
     private readonly _clients = new Map<string, TClientStateManager>();
