@@ -89,7 +89,7 @@ export class RemoteClientConnection<
             return;
         }
 
-        const channel = this.shouldSendReliably(message[0])
+        const channel = this.shouldSendReliably(message[0]) || !this.unreliable
             ? this.reliable
             : this.unreliable;
 
@@ -106,7 +106,7 @@ export class RemoteClientConnection<
 
     disconnect(): void {
         this.reliable.close();
-        this.unreliable.close();
+        this.unreliable?.close();
 
         if (this.peer.connectionState === 'connected') {
             this.peer.close();

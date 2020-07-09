@@ -64,7 +64,7 @@ export class RemoteServerConnection<
                 console.log(`connected to session ${params.sessionId}`);
                 this._sessionId = params.sessionId;
 
-                this.setupPeer(params.ready);
+                this.setupPeer(peer, params.ready);
             },
             () => {
                 if (!this.reliable) {
@@ -75,8 +75,8 @@ export class RemoteServerConnection<
         );
     }
 
-    private setupPeer(ready: () => void) {
-        this.peer.ondatachannel = (event) => {
+    private setupPeer(peer: RTCPeerConnection, ready: () => void) {
+        peer.ondatachannel = (event) => {
             if (event.channel.label === 'reliable') {
                 this.reliable = event.channel;
 
@@ -160,7 +160,7 @@ export class RemoteServerConnection<
     disconnect() {
         this.reliable.close();
         this.unreliable?.close();
-        this.peer.close();
+        this.peer?.close();
     }
 
     get localId() {

@@ -93,7 +93,7 @@ export class ServerSignalConnection extends SignalConnection {
 
         await peer.setLocalDescription(answer);
 
-        this.send(['accept', name, peer.localDescription.sdp]);
+        this.send(['accept', name, peer.localDescription!.sdp]);
     }
 
     private async receiveIce(name: string, data: string) {

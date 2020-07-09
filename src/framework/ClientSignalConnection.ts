@@ -45,7 +45,7 @@ export class ClientSignalConnection extends SignalConnection {
             'join',
             this.sessionId,
             this.clientName,
-            this.peer.localDescription.sdp,
+            this.peer.localDescription!.sdp,
         ]);
     }
 

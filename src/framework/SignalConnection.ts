@@ -39,7 +39,7 @@ export abstract class SignalConnection {
                 : defaultSignalSettings.rtcConfig,
         };
 
-        this.socket = new WebSocket(settings.signalUrl);
+        this.socket = new WebSocket(this.settings.signalUrl);
 
         this.socket.onopen = (event) => this.socketOpened(event);
 

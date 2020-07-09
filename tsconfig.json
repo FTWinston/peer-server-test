@@ -8,7 +8,8 @@
     "jsx": "react",
     "allowJs": true,
     "declaration": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "strictNullChecks": true
   },
   "include": [
     "src/framework"

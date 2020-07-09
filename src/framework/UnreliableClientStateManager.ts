@@ -8,7 +8,7 @@ export class UnreliableClientStateManager<
     TClientState,
     TServerEvent
 > extends ClientStateManager<TClientState, TServerEvent> {
-    public lastAcknowledgedTime?: number;
+    public lastAcknowledgedTime: number = -unacknowledgedDeltaInterval;
 
     private readonly unacknowledgedDeltas = new Map<number, PatchOperation[]>();
 
@@ -25,6 +25,8 @@ export class UnreliableClientStateManager<
     }
 
     public acknowledge(time: number) {
+        this.lastAcknowledgedTime = time;
+
         for (const testTime of this.unacknowledgedDeltas.keys()) {
             if (((testTime as unknown) as number) <= time) {
                 this.unacknowledgedDeltas.delete(testTime);
