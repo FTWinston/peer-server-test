@@ -8,4 +8,3 @@ export { SystemEvent } from './ServerToClientMessage';
 export { ServerWorkerMessageIn } from './ServerWorkerMessageIn';
 export { ServerWorkerMessageOut } from './ServerWorkerMessageOut';
 export { FieldMappings, extraFields, anyOtherFields, shouldMap } from 'filter-mirror';
-export { RecursiveReadonly } from './Server';

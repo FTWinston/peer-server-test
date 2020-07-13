@@ -34,7 +34,8 @@
   },
   "dependencies": {
     "filter-mirror": "git+https://github.com/FTWinston/filter-mirror.git",
-    "jsonpatch": "^3.0.1"
+    "jsonpatch": "^3.0.1",
+    "ts-essentials": "^7.0.0"
   },
   "repository": {
     "type": "git",

@@ -1,3 +1,4 @@
+import { DeepReadonly } from 'ts-essentials';
 import {
     ServerWorkerMessageIn,
     ServerWorkerMessageInType,
@@ -9,10 +10,6 @@ import {
 import { FieldMappings, multiFilter, PatchOperation } from 'filter-mirror';
 import { ClientStateManager } from './ClientStateManager';
 import { SystemEvent } from './ServerToClientMessage';
-
-export type RecursiveReadonly<T> = {
-    readonly [P in keyof T]: RecursiveReadonly<T[P]>;
-}
 
 export abstract class Server<
     TServerState extends {},
@@ -61,8 +58,8 @@ export abstract class Server<
     private _state: TServerState;
     private _stateProxy: TServerState;
 
-    public get state(): RecursiveReadonly<TServerState> {
-        return this._state;
+    public get state(): DeepReadonly<TServerState> {
+        return this._state as DeepReadonly<TServerState>;
     }
 
     protected updateState(update: (state: TServerState) => void) {
